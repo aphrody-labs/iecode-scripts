@@ -2,7 +2,7 @@
 # Container entry point. /source is read-only; /output is dedicated to this target.
 set -eu
 cd /source
-revision=$(sh scripts/package-revision.sh /source)
+revision=$(sh scripts/ruzu/package-revision.sh /source)
 export RUSTFLAGS='-C target-cpu=znver2'
 export CFLAGS='-march=znver2 -mtune=znver2'
 export CXXFLAGS="$CFLAGS"
@@ -15,8 +15,8 @@ export CARGO_PROFILE_RELEASE_DEBUG=0
 unset CARGO_TARGET_DIR
 # Explicit target keeps target RUSTFLAGS off host build scripts/proc macros.
 cargo build --locked --release --target x86_64-unknown-linux-gnu --target-dir /output/build --bin ruzu --jobs "$1"
-[ "$revision" = "$(sh scripts/package-revision.sh /source)" ] || {
+[ "$revision" = "$(sh scripts/ruzu/package-revision.sh /source)" ] || {
     echo 'Git revision changed during compilation; retry on a stable checkout.' >&2
     exit 1
 }
-python3 /source/scripts/steamdeck/package.py "$revision"
+python3 /source/scripts/ruzu/steamdeck/package.py "$revision"

@@ -28,12 +28,12 @@ def package(revision, source=Path("/source"), build_output=Path("/output"),
         work = Path(temp)
         appdir = work / "AppDir"
         icon = work / "ruzu.png"
-        shutil.copy2(source / "src/ruzu/assets/ruzu-rusty-lemon.png", icon)
+        shutil.copy2(source / "crates/emu/ruzu/ruzu/assets/ruzu-rusty-lemon.png", icon)
         binary = work / "ruzu"
         shutil.copy2(build_output / "build/x86_64-unknown-linux-gnu/release/ruzu", binary)
         subprocess.run(["strip", "--strip-unneeded", str(binary)], check=True)
         env = dict(os.environ, APPDIR=str(appdir), ICON=str(icon),
-                   DESKTOP=str(source / "dist/linux/ruzu.desktop"), MAIN_BIN="ruzu",
+                   DESKTOP=str(source / "crates/emu/dist/linux/ruzu.desktop"), MAIN_BIN="ruzu",
                    OUTPATH=str(work), OUTNAME=name, VERSION=revision,
                    DEPLOY_GTK="1", DEPLOY_GLIBC="1", DEPLOY_OPENGL="1", DEPLOY_VULKAN="1",
                    GTK_DIR="gtk-4.0", DEPLOY_SDL="1", DEPLOY_PULSE="1", DEPLOY_PIPEWIRE="1",
@@ -55,7 +55,7 @@ def package(revision, source=Path("/source"), build_output=Path("/output"),
         info = appdir / "share/doc/ruzu"
         info.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source / "LICENSE", info / "LICENSE")
-        shutil.copy2(source / "scripts/steamdeck/Dockerfile", info / "Dockerfile")
+        shutil.copy2(source / "scripts/ruzu/steamdeck/Dockerfile", info / "Dockerfile")
         (info / "build-info.txt").write_text(
             f"Revision: {revision}\nCPU: znver2\nRust: 1.92.0\n"
             "glibc, GTK and Mesa: bundled by pinned quick-sharun\n"

@@ -11,7 +11,7 @@
 set -eu
 export LC_ALL=C
 
-repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 cd "$repo_root"
 
 if ! command -v dpkg-deb >/dev/null 2>&1; then
@@ -25,7 +25,7 @@ if [ ! -x "$binary" ]; then
     exit 1
 fi
 
-package_revision=$(sh "$repo_root/scripts/package-revision.sh" "$repo_root")
+package_revision=$(sh "$repo_root/scripts/ruzu/package-revision.sh" "$repo_root")
 release_commit=$(git rev-parse HEAD)
 
 # Cargo supplies numeric package metadata only, never the archive name.
@@ -76,7 +76,7 @@ install -m 755 "$binary" "$staging/usr/bin/ruzu"
 if command -v strip >/dev/null 2>&1; then
     strip --strip-unneeded "$staging/usr/bin/ruzu"
 fi
-install -m 644 "$repo_root/src/ruzu/assets/ruzu-rusty-lemon.png" \
+install -m 644 "$repo_root/crates/emu/ruzu/ruzu/assets/ruzu-rusty-lemon.png" \
     "$staging/usr/share/icons/hicolor/256x256/apps/ruzu.png"
 for license in LICENSE LICENSE.txt LICENSE.md; do
     if [ -f "$repo_root/$license" ]; then
@@ -131,7 +131,7 @@ Description: Nintendo Switch emulator
 CONTROL
 
 # Reject changes to the package identity during packaging.
-checked_revision=$(sh "$repo_root/scripts/package-revision.sh" "$repo_root")
+checked_revision=$(sh "$repo_root/scripts/ruzu/package-revision.sh" "$repo_root")
 if [ "$checked_revision" != "$package_revision" ] || [ "$(git rev-parse HEAD)" != "$release_commit" ]; then
     echo "Git package identity changed while packaging; rebuild the package." >&2
     exit 1

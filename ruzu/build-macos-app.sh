@@ -6,12 +6,12 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
     exit 1
 fi
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 build_dir="$repo_root/target/release"
 binary="$build_dir/ruzu"
 app="$build_dir/ruzu.app"
-plist="$repo_root/src/ruzu/Info.plist"
-icon_source="$repo_root/src/ruzu/assets/ruzu-rusty-lemon.png"
+plist="$repo_root/crates/emu/ruzu/ruzu/Info.plist"
+icon_source="$repo_root/crates/emu/ruzu/ruzu/assets/ruzu-rusty-lemon.png"
 
 if command -v brew >/dev/null 2>&1; then
     brew_prefix="$(brew --prefix)"
@@ -45,7 +45,7 @@ done
 
 cd "$repo_root"
 if [[ "$package" == true ]]; then
-    package_revision="$(sh "$repo_root/scripts/package-revision.sh" "$repo_root")"
+    package_revision="$(sh "$repo_root/scripts/ruzu/package-revision.sh" "$repo_root")"
     release_commit="$(git rev-parse HEAD)"
 fi
 # Cargo supplies numeric bundle metadata only, never the archive name.
@@ -125,7 +125,7 @@ if [[ -n "$moltenvk" ]]; then
     echo "Using explicit MoltenVK override: $moltenvk"
     install -m 755 "$moltenvk" "$frameworks/libMoltenVK.dylib"
 else
-    python3 "$repo_root/scripts/fetch-moltenvk.py" "$frameworks/libMoltenVK.dylib"
+    python3 "$repo_root/scripts/ruzu/fetch-moltenvk.py" "$frameworks/libMoltenVK.dylib"
 fi
 
 # GTK is not a macOS system framework. Bundle the runtime data that cannot be
@@ -177,7 +177,7 @@ if command -v brew >/dev/null 2>&1; then
         "$loader_cache" > "$bundled_loader_cache"
 fi
 
-"$repo_root/scripts/macos-bundle-dependencies.sh" "$staging" "${loader_modules[@]}"
+"$repo_root/scripts/ruzu/macos-bundle-dependencies.sh" "$staging" "${loader_modules[@]}"
 
 plutil -lint "$contents/Info.plist" >/dev/null
 while IFS= read -r nested_code; do
@@ -189,7 +189,7 @@ codesign --verify --deep --strict "$staging"
 
 if [[ "$package" == true ]]; then
     # Reject changes to the package identity during compilation or bundling.
-    checked_revision="$(sh "$repo_root/scripts/package-revision.sh" "$repo_root")"
+    checked_revision="$(sh "$repo_root/scripts/ruzu/package-revision.sh" "$repo_root")"
     if [[ "$checked_revision" != "$package_revision" || "$(git rev-parse HEAD)" != "$release_commit" ]]; then
         echo "Git package identity changed while packaging; rebuild the package." >&2
         exit 1

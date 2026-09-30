@@ -106,7 +106,7 @@ def package(root):
                  env=dict(os.environ, LC_ALL="C")).stdout
     if "Advanced Micro Devices X86-64" not in header:
         raise RuntimeError("target/release/ruzu is not an x86_64 ELF binary")
-    revision = run("sh", str(root / "scripts/package-revision.sh"), str(root),
+    revision = run("sh", str(root / "scripts/ruzu/package-revision.sh"), str(root),
                    capture_output=True, text=True).stdout.strip()
     cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "ruzu-packaging"
     cache.mkdir(parents=True, exist_ok=True)
@@ -128,13 +128,13 @@ def package(root):
                    PATH=f"{cache}:{os.environ.get('PATH', '')}", OUTPUT=str(work / output_name))
         excludes = [f"--exclude-library={pattern}" for pattern in EXCLUDED]
         run(str(deploy), "--appdir", str(appdir), "--executable", str(staged_binary),
-            "--desktop-file", str(root / "dist/linux/ruzu.desktop"),
-            "--icon-file", str(root / "src/ruzu/assets/ruzu-rusty-lemon.png"),
+            "--desktop-file", str(root / "crates/emu/dist/linux/ruzu.desktop"),
+            "--icon-file", str(root / "crates/emu/ruzu/ruzu/assets/ruzu-rusty-lemon.png"),
             "--icon-filename", "ruzu", "--plugin", "gtk", *excludes, env=env)
         remove_plugin_overrides(appdir)
         # Our launcher sets resource paths without overriding user settings.
         launcher = work / "AppRun"
-        shutil.copy2(root / "dist/linux/AppRun", launcher)
+        shutil.copy2(root / "crates/emu/dist/linux/AppRun", launcher)
         launcher.chmod(0o755)
         minimum = glibc_requirement(appdir)
         info = appdir / "usr/share/doc/ruzu"
@@ -145,7 +145,7 @@ def package(root):
             "Graphics drivers: supplied by host. Target Linux distribution validation required.\n")
         run(str(deploy), "--appdir", str(appdir), "--custom-apprun", str(launcher),
             "--output", "appimage", *excludes, env=env, cwd=work)
-        current_revision = run("sh", str(root / "scripts/package-revision.sh"), str(root),
+        current_revision = run("sh", str(root / "scripts/ruzu/package-revision.sh"), str(root),
                                capture_output=True, text=True).stdout.strip()
         if current_revision != revision:
             raise RuntimeError("Git revision changed during packaging; retry on a stable checkout")
@@ -163,6 +163,6 @@ def package(root):
 if __name__ == "__main__":
     argparse.ArgumentParser(description=__doc__).parse_args()
     try:
-        package(Path(__file__).resolve().parent.parent)
+        package(Path(__file__).resolve().parents[2])
     except (RuntimeError, OSError, subprocess.CalledProcessError) as error:
         raise SystemExit(f"AppImage packaging failed: {error}") from error

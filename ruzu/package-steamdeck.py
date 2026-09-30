@@ -9,12 +9,12 @@ import shlex
 import shutil
 import subprocess
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MIN_FREE_BYTES = 35 * 1024**3
 
 
 def commands(root, jobs):
-    context = root / "scripts/steamdeck"
+    context = root / "scripts/ruzu/steamdeck"
     image = "ruzu-steamdeck:" + hashlib.sha256(
         (context / "Dockerfile").read_bytes()).hexdigest()[:16]
     output = root / "target/steamdeck"
@@ -28,7 +28,7 @@ def commands(root, jobs):
          "--env", "RUSTUP_HOME=/usr/local/rustup",
          "--env", "GIT_CONFIG_COUNT=1", "--env", "GIT_CONFIG_KEY_0=safe.directory",
          "--env", "GIT_CONFIG_VALUE_0=*",
-         image, "sh", "/source/scripts/steamdeck/build.sh", str(jobs)],
+         image, "sh", "/source/scripts/ruzu/steamdeck/build.sh", str(jobs)],
     ]
 
 

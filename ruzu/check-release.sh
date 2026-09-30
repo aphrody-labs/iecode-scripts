@@ -2,7 +2,7 @@
 # Validate a local release checkout without changing its refs or files.
 set -eu
 
-repo=${1:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}
+repo=${1:-$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)}
 cd "$repo"
 
 if [ -n "$(git status --porcelain --untracked-files=all --ignore-submodules=none)" ]; then

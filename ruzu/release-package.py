@@ -81,17 +81,17 @@ def build(repo, platform, package, skip_deps):
     if platform == "windows":
         if package:
             run(repo, "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass",
-                "-File", str(repo / "dist/package-windows.ps1"))
+                "-File", str(repo / "crates/emu/dist/package-windows.ps1"))
         else:
             run(repo, "cargo", "build", "--locked", "--release", "-p", "ruzu", "-p", "ruzu_cmd")
     else:
         environment = os.environ.copy()
         if platform == "linux":
             environment["RUZU_LINUX_PACKAGE"] = "1" if package else "0"
-            args = ["sh", str(repo / "scripts/build-linux.sh"), "--release"]
+            args = ["sh", str(repo / "scripts/ruzu/build-linux.sh"), "--release"]
         else:
             environment["RUZU_MACOS_PACKAGE"] = "1" if package else "0"
-            args = ["sh", str(repo / "scripts/build-macos.sh"), "--release"]
+            args = ["sh", str(repo / "scripts/ruzu/build-macos.sh"), "--release"]
         if skip_deps or package:
             args.append("--skip-deps")
         run(repo, *args, env=environment)
@@ -159,7 +159,7 @@ def main():
     parser.add_argument("--skip-deps", action="store_true")
     args = parser.parse_args()
     try:
-        release(Path(__file__).resolve().parents[1], args.platform, args.skip_deps)
+        release(Path(__file__).resolve().parents[2], args.platform, args.skip_deps)
     except (RuntimeError, OSError, subprocess.CalledProcessError, EOFError, KeyboardInterrupt) as error:
         print(f"Release stopped: {error}\nLocal files/commit/tag, if created, are retained for review. "
               "Nothing is pushed before both builds and packaging succeed.", file=sys.stderr)

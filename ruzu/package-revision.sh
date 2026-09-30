@@ -2,7 +2,7 @@
 # Git-derived, filename-safe identity. Keep in sync with package-revision.ps1.
 set -eu
 export LC_ALL=C
-repo=${1:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}
+repo=${1:-$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)}
 cd "$repo"
 commit=$(git rev-parse --verify HEAD)
 hash=$(printf '%.12s' "$commit")

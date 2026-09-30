@@ -21,7 +21,7 @@ class AppImageTests(unittest.TestCase):
     def test_generic_package_name_and_guidance(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            for name in ("target/release/ruzu", "dist/linux/AppRun", "LICENSE"):
+            for name in ("target/release/ruzu", "crates/emu/dist/linux/AppRun", "LICENSE"):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(b"test")
@@ -107,7 +107,7 @@ class AppImageTests(unittest.TestCase):
     def test_launcher_preserves_settings_and_arguments(self):
         with tempfile.TemporaryDirectory(prefix="ruzu appdir ") as temp:
             root = Path(temp)
-            shutil.copy2(ROOT / "dist/linux/AppRun", root)
+            shutil.copy2(ROOT / "crates/emu/dist/linux/AppRun", root)
             (root / "usr/bin").mkdir(parents=True)
             binary = root / "usr/bin/ruzu"
             binary.write_text('#!/bin/sh\nprintf "%s\\n" "${GDK_BACKEND-unset}" '

@@ -216,7 +216,7 @@ parse_build_args() {
 # PKG_CONFIG_PATH the platform hook exported: on macOS in particular, Homebrew's
 # pkg-config has to come first or every probe fails.
 run_build() {
-    REPO_ROOT=$(CDPATH= cd -- "${PLATFORM_SCRIPT_DIR}/.." && pwd)
+    REPO_ROOT=$(CDPATH= cd -- "${PLATFORM_SCRIPT_DIR}/../.." && pwd)
 
     set -- build
     if [ "$BUILD_PROFILE" = release ]; then

@@ -58,6 +58,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
     parser.add_argument("--cache", type=Path,
-                        default=Path(__file__).resolve().parent.parent / "target/deps/moltenvk")
+                        default=Path(__file__).resolve().parents[2] / "target/deps/moltenvk")
     args = parser.parse_args()
     install(args.destination, args.cache)

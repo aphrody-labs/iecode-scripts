@@ -16,12 +16,13 @@ class PackageModes(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / "scripts").mkdir()
         (self.root / "dist").mkdir()
+        (self.root / "crates/emu/dist").mkdir(parents=True)
 
     @unittest.skipUnless(os.name == "nt", "PowerShell packaging confirmation")
     def test_windows_refusal_displays_names_and_stops_before_build(self):
         result = subprocess.run(
             ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-             str(ROOT / "dist/package-windows.ps1")],
+             str(ROOT / "crates/emu/dist/package-windows.ps1")],
             cwd=ROOT, input="n\n", capture_output=True, text=True)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("Package directory: Ruzu-Windows-", result.stdout)
@@ -39,7 +40,7 @@ $mode = if ($Official) { '1' } else { '0' }
   "set `"RUZU_OFFICIAL_PACKAGE=$mode`"") | Set-Content $EnvironmentFile
 ''')
         (self.root / "scripts/release-package.py").write_text('print("OFFICIAL_PATH")\n')
-        (self.root / "dist/package-windows.ps1").write_text('param($Profile)\nWrite-Output "LOCAL_PATH"\n')
+        (self.root / "crates/emu/dist/package-windows.ps1").write_text('param($Profile)\nWrite-Output "LOCAL_PATH"\n')
         for args, expected, excluded in [([], "LOCAL_PATH", "OFFICIAL_PATH"),
                                          (["-Official"], "OFFICIAL_PATH", "LOCAL_PATH"),
                                          (["-Development"], "LOCAL_PATH", "OFFICIAL_PATH"),
