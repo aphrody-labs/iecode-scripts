@@ -60,7 +60,7 @@ Set-StrictMode -Version Latest
 
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $Distant = '/home/ubuntu/nie'
-$AppId = 2799860   # INAZUMA ELEVEN Victory Road, cf. nie_steam::IEVR_STEAM_APP_ID
+$AppId = 2799860   # INAZUMA ELEVEN Victory Road, cf. aphrody_nie_steam::IEVR_STEAM_APP_ID
 
 function Etape   { param([string]$M) Write-Host "`n$M" -ForegroundColor Cyan }
 function Ok      { param([string]$M) Write-Host "  [ok]   $M" -ForegroundColor Green }
@@ -266,7 +266,7 @@ if (Test-Path $inv) {
 }
 
 Write-Host "`nEnsuite, dans un terminal NEUF (pour que NIE_GAME_DIR existe) :" -ForegroundColor Cyan
-Write-Host '  cargo build --release -p nie-cli'
+Write-Host '  cargo build --release -p aphrody-nie-cli'
 Write-Host '  .\target\release\nie.exe info        # doit annoncer 255 308 entrées'
 Write-Host '  bun install ; bun run build:ffi'
 Write-Host "`nLe détail, et ce qui reste à faire à la main : LOCAL.md"

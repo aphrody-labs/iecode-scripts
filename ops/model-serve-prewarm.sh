@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # scripts/ops/model-serve-prewarm.sh
-# Production-ready pre-warming pipeline for nie-model-serve (port 8790).
+# Production-ready pre-warming pipeline for aphrody-nie-model-serve (port 8790).
 # Assembles and caches high-traffic 3D GLB character models and keshin in var/model-cache/.
 
 set -euo pipefail
@@ -11,11 +11,11 @@ BASE_URL="http://${HOST}:${PORT}"
 
 # Health check first
 if ! curl -fsS "${BASE_URL}/health" >/dev/null 2>&1; then
-    echo "nie-model-serve is not responding at ${BASE_URL}/health" >&2
+    echo "aphrody-nie-model-serve is not responding at ${BASE_URL}/health" >&2
     exit 1
 fi
 
-echo "=== nie-model-serve 2026 Pre-warm Pipeline ==="
+echo "=== aphrody-nie-model-serve 2026 Pre-warm Pipeline ==="
 echo "Target: ${BASE_URL}"
 
 # Priority character and asset codes for pre-assembly

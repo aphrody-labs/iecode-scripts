@@ -4,7 +4,7 @@
 # ///
 """Verifie si les vtable_vaddr de la base pointent la ou on croit.
 
-`nie-forge kb` lit 0 methode sur 1 745 classes : soit l'adresse designe le
+`aphrody-nie-forge kb` lit 0 methode sur 1 745 classes : soit l'adresse designe le
 complete object locator plutot que la premiere methode, soit elle vient d'un
 agencement qui n'est pas celui du binaire livre. Ce script tranche.
 """

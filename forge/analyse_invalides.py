@@ -4,7 +4,7 @@
 # ///
 """Ventile les unites de code que le desassemblage lineaire refuse.
 
-`nie-forge lift` les agrege sous la cause « invalide » — 1 052 unites,
+`aphrody-nie-forge lift` les agrege sous la cause « invalide » — 1 052 unites,
 467 473 octets, le plus gros blocage restant. Savoir OU le decodage casse dit
 s'il s'agit de donnees inseres dans .text, d'unites tronquees, ou d'un vrai
 manque du desassembleur.
