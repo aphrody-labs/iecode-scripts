@@ -20,7 +20,7 @@ if not defined CPK_DIR set "CPK_DIR=%IECODE_DATA_DIR%\packs"
 if "%SQLITE_DB_PATH%"=="" set "SQLITE_DB_PATH=%IECODE_ROOT%\var\mirror.sqlite"
 if not defined NIERS_MIRROR set "NIERS_MIRROR=%SQLITE_DB_PATH%"
 if not defined NIE_DB set "NIE_DB=%SQLITE_DB_PATH%"
-if defined DATABASE_URL if not defined NIE_PG_URL set "NIE_PG_URL=%DATABASE_URL%"
+rem NIE_PG_URL is explicit; inherited DATABASE_URL may belong to another domain.
 
 if "%MODEL_SERVE_PORT%"=="" set "MODEL_SERVE_PORT=8790"
 if not defined MODEL_SERVE_URL set "MODEL_SERVE_URL=http://127.0.0.1:%MODEL_SERVE_PORT%"

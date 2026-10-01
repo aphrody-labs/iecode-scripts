@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 # Repository-scoped nie environment. Safe to source repeatedly.
 
-if [ -n "${NIE_ENV_ACTIVE:-}" ]; then
-    return 0
-fi
-export NIE_ENV_ACTIVE=1
-
+# Reload configuration on each source; an inherited process-wide marker must
+# not suppress initialization in a different checkout.
 nie_env_root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 
 nie_path_prepend() {

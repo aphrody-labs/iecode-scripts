@@ -41,7 +41,7 @@ if (-not $env:CPK_DIR) { $env:CPK_DIR = Join-Path $env:IECODE_DATA_DIR "packs" }
 if (-not $env:SQLITE_DB_PATH) { $env:SQLITE_DB_PATH = Join-Path $IecodeRoot "var\mirror.sqlite" }
 if (-not $env:NIERS_MIRROR) { $env:NIERS_MIRROR = $env:SQLITE_DB_PATH }
 if (-not $env:NIE_DB) { $env:NIE_DB = $env:SQLITE_DB_PATH }
-if (-not $env:NIE_PG_URL -and $env:DATABASE_URL) { $env:NIE_PG_URL = $env:DATABASE_URL }
+# NIE_PG_URL is explicit; inherited DATABASE_URL may belong to another domain.
 
 # Services & Ports
 if (-not $env:MODEL_SERVE_PORT) { $env:MODEL_SERVE_PORT = "8790" }

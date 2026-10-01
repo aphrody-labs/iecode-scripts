@@ -40,9 +40,7 @@ export CPK_DIR="${CPK_DIR:-${IECODE_DATA_DIR}/packs}"
 export SQLITE_DB_PATH="${SQLITE_DB_PATH:-${IECODE_ROOT}/var/mirror.sqlite}"
 export NIERS_MIRROR="${NIERS_MIRROR:-${SQLITE_DB_PATH}}"
 export NIE_DB="${NIE_DB:-${SQLITE_DB_PATH}}"
-if [ -n "${DATABASE_URL:-}" ]; then
-    export NIE_PG_URL="${NIE_PG_URL:-$DATABASE_URL}"
-fi
+# NIE_PG_URL must be configured explicitly; generic DATABASE_URL may belong to another domain.
 
 # Ports & Services
 export MODEL_SERVE_PORT="${MODEL_SERVE_PORT:-8790}"
