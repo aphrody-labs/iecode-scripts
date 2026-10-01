@@ -6,9 +6,9 @@ $IecodeRoot = Resolve-Path "$ScriptDir\..\.."
 $env:IECODE_ROOT = $IecodeRoot
 
 # Load .env if present
-$EnvFile = Join-Path $IecodeRoot ".env"
+$EnvFile = Join-Path $IecodeRoot ".env.local"
 if (-not (Test-Path $EnvFile)) {
-    $EnvFile = Join-Path $IecodeRoot ".env.example"
+    $EnvFile = Join-Path $IecodeRoot ".env"
 }
 
 if (Test-Path $EnvFile) {
@@ -27,29 +27,28 @@ if (Test-Path $EnvFile) {
 
 # Ensure Canonical Paths
 if (-not $env:IECODE_DATA_DIR) { $env:IECODE_DATA_DIR = Join-Path $IecodeRoot "data" }
-if (-not $env:NIE_GAME_DIR) { $env:NIE_GAME_DIR = $IecodeRoot }
-$env:IEVR_GAME_DIR = $env:NIE_GAME_DIR
-$env:NIE_GAME_PATH = $env:NIE_GAME_DIR
-$env:NIE_REPO = $IecodeRoot
+if (-not $env:NIE_GAME_DIR) { $env:NIE_GAME_DIR = Join-Path $HOME ".local/share/Steam/iecode/inazuma" }
+if (-not $env:IEVR_GAME_DIR) { $env:IEVR_GAME_DIR = $env:NIE_GAME_DIR }
+if (-not $env:NIE_GAME_PATH) { $env:NIE_GAME_PATH = $env:NIE_GAME_DIR }
+if (-not $env:NIE_REPO) { $env:NIE_REPO = $IecodeRoot }
 
-$env:DATA_ROOT = $env:IECODE_DATA_DIR
-$env:DATA_PATH = $env:IECODE_DATA_DIR
-$env:DUMP_ROOT = Join-Path $env:IECODE_DATA_DIR "dx11"
-$env:CPK_DIR = Join-Path $env:IECODE_DATA_DIR "packs"
+if (-not $env:DATA_ROOT) { $env:DATA_ROOT = $env:IECODE_DATA_DIR }
+if (-not $env:DATA_PATH) { $env:DATA_PATH = $env:IECODE_DATA_DIR }
+if (-not $env:DUMP_ROOT) { $env:DUMP_ROOT = Join-Path $env:IECODE_DATA_DIR "dx11" }
+if (-not $env:CPK_DIR) { $env:CPK_DIR = Join-Path $env:IECODE_DATA_DIR "packs" }
 
 # Database & Mirror
 if (-not $env:SQLITE_DB_PATH) { $env:SQLITE_DB_PATH = Join-Path $IecodeRoot "var\mirror.sqlite" }
-$env:NIERS_MIRROR = $env:SQLITE_DB_PATH
-$env:NIE_DB = $env:SQLITE_DB_PATH
-if (-not $env:DATABASE_URL) { $env:DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/iecode" }
-$env:NIE_PG_URL = $env:DATABASE_URL
+if (-not $env:NIERS_MIRROR) { $env:NIERS_MIRROR = $env:SQLITE_DB_PATH }
+if (-not $env:NIE_DB) { $env:NIE_DB = $env:SQLITE_DB_PATH }
+if (-not $env:NIE_PG_URL -and $env:DATABASE_URL) { $env:NIE_PG_URL = $env:DATABASE_URL }
 
 # Services & Ports
 if (-not $env:MODEL_SERVE_PORT) { $env:MODEL_SERVE_PORT = "8790" }
-$env:MODEL_SERVE_URL = "http://127.0.0.1:$($env:MODEL_SERVE_PORT)"
-$env:NIE_MODEL_SERVE_URL = $env:MODEL_SERVE_URL
+if (-not $env:MODEL_SERVE_URL) { $env:MODEL_SERVE_URL = "http://127.0.0.1:$($env:MODEL_SERVE_PORT)" }
+if (-not $env:NIE_MODEL_SERVE_URL) { $env:NIE_MODEL_SERVE_URL = $env:MODEL_SERVE_URL }
 if (-not $env:AZALEE_PORT) { $env:AZALEE_PORT = "8807" }
-$env:AZALEE_API_URL = "http://127.0.0.1:$($env:AZALEE_PORT)"
+if (-not $env:AZALEE_API_URL) { $env:AZALEE_API_URL = "http://127.0.0.1:$($env:AZALEE_PORT)" }
 if (-not $env:INAGLE_PORT) { $env:INAGLE_PORT = "3010" }
 if (-not $env:WEB_PORT) { $env:WEB_PORT = "3000" }
 

@@ -15,7 +15,7 @@ touch "$private_env"
 chmod 600 "$private_env"
 
 has_env_key() {
-    local key=$1
+    local key=$1 file=${2:-$private_env}
     awk -F= -v wanted="$key" '
         /^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=/ {
             candidate=$1
@@ -24,7 +24,7 @@ has_env_key() {
             if (candidate == wanted) found=1
         }
         END { exit(found ? 0 : 1) }
-    ' "$private_env"
+    ' "$file"
 }
 
 merge_private_env() {
@@ -66,19 +66,33 @@ else
     exit 1
 fi
 
+# Retain explicitly configured host paths before filling missing defaults.
+if [ -r "$user_env" ]; then
+    # shellcheck disable=SC1090
+    . "$user_env"
+fi
+touch "$user_env"
+# Append missing defaults while preserving every existing custom setting.
+while IFS= read -r nie_default; do
+    nie_default_key=${nie_default%%=*}
+    if ! has_env_key "$nie_default_key" "$user_env"; then
+        printf '%s\n' "$nie_default" >> "$user_env"
+    fi
+done < <(
 {
-    printf 'NIE_REPO=%q\n' "$repo_root"
-    printf 'NIE_GAME_DIR=%q\n' "$HOME/.local/share/Steam/iecode/inazuma"
-    printf 'IEVR_GAME_DIR=%q\n' "$HOME/.local/share/Steam/iecode/inazuma"
-    printf 'NIE_GAME_PATH=%q\n' "$HOME/.local/share/Steam/iecode/inazuma"
-    printf 'STEAM_LIBRARY_PATH=%q\n' "$HOME/.local/share/Steam"
-    printf 'NIE_RUNTIME_BASE=%q\n' "$HOME/.local/share/nie/runtime"
-    printf 'NIE_STEAM_TOKEN_STORE=%q\n' "$HOME/.local/share/nie/steam-tokens.json"
-    printf 'STEAM_TOKEN_STORE=%q\n' "$HOME/.local/share/nie/steam-tokens.json"
-    printf 'STEAM_COMPAT_CLIENT_INSTALL_PATH=%q\n' "$HOME/.local/share/Steam"
-    printf 'STEAM_COMPAT_DATA_PATH=%q\n' "$HOME/.local/share/nie/runtime/proton-prefix"
-    printf 'WINEPREFIX=%q\n' "$HOME/.local/share/nie/runtime/proton-prefix/pfx"
-} > "$user_env"
+    printf 'NIE_REPO=%q\n' "${NIE_REPO:-$repo_root}"
+    printf 'NIE_GAME_DIR=%q\n' "${NIE_GAME_DIR:-$HOME/.local/share/Steam/iecode/inazuma}"
+    printf 'IEVR_GAME_DIR=%q\n' "${IEVR_GAME_DIR:-${NIE_GAME_DIR:-$HOME/.local/share/Steam/iecode/inazuma}}"
+    printf 'NIE_GAME_PATH=%q\n' "${NIE_GAME_PATH:-${NIE_GAME_DIR:-$HOME/.local/share/Steam/iecode/inazuma}}"
+    printf 'STEAM_LIBRARY_PATH=%q\n' "${STEAM_LIBRARY_PATH:-$HOME/.local/share/Steam}"
+    printf 'NIE_RUNTIME_BASE=%q\n' "${NIE_RUNTIME_BASE:-$HOME/.local/share/nie/runtime}"
+    printf 'NIE_STEAM_TOKEN_STORE=%q\n' "${NIE_STEAM_TOKEN_STORE:-$HOME/.local/share/nie/steam-tokens.json}"
+    printf 'STEAM_TOKEN_STORE=%q\n' "${STEAM_TOKEN_STORE:-$HOME/.local/share/nie/steam-tokens.json}"
+    printf 'STEAM_COMPAT_CLIENT_INSTALL_PATH=%q\n' "${STEAM_COMPAT_CLIENT_INSTALL_PATH:-$HOME/.local/share/Steam}"
+    printf 'STEAM_COMPAT_DATA_PATH=%q\n' "${STEAM_COMPAT_DATA_PATH:-$HOME/.local/share/nie/runtime/proton-prefix}"
+    printf 'WINEPREFIX=%q\n' "${WINEPREFIX:-$HOME/.local/share/nie/runtime/proton-prefix/pfx}"
+}
+)
 chmod 600 "$user_env"
 
 if ! grep -Fq "$profile_marker" "$HOME/.bashrc"; then
@@ -120,7 +134,9 @@ else
 fi
 
 bash "$repo_root/scripts/dev/installer-binaires.sh"
-direnv allow "$repo_root"
+if command -v direnv >/dev/null 2>&1 && [ -f "$repo_root/.envrc" ]; then
+    direnv allow "$repo_root"
+fi
 
 printf 'nie environment installed: %s private keys, .env -> .env.local, user PATH ready\n' \
     "$(awk -F= '/^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=/{count++} END{print count+0}' "$private_env")"

@@ -3,26 +3,29 @@
 # Usage: source scripts/dev/env.sh
 
 SCRIPT_DIR="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-export IECODE_ROOT="$(CDPATH='' cd -- "${SCRIPT_DIR}/../.." && pwd)"
+IECODE_ROOT="$(CDPATH='' cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
-# Load .env file if available
-if [ -r "${IECODE_ROOT}/.env" ]; then
+export IECODE_ROOT
+
+# Load only a private environment file, never the example template.
+iecode_env_file="${IECODE_ROOT}/.env.local"
+[ -r "$iecode_env_file" ] || iecode_env_file="${IECODE_ROOT}/.env"
+if [ -r "$iecode_env_file" ]; then
+    iecode_restore_allexport=0
+    case $- in *a*) iecode_restore_allexport=1 ;; esac
     set -a
-    # shellcheck disable=SC1091
-    . "${IECODE_ROOT}/.env"
-    set +a
-elif [ -r "${IECODE_ROOT}/.env.example" ]; then
-    set -a
-    # shellcheck disable=SC1091
-    . "${IECODE_ROOT}/.env.example"
-    set +a
+    # shellcheck disable=SC1090
+    . "$iecode_env_file"
+    [ "$iecode_restore_allexport" -eq 1 ] || set +a
+    unset iecode_restore_allexport
 fi
+unset iecode_env_file
 
 # Canonical Game Data Directory
 export IECODE_DATA_DIR="${IECODE_DATA_DIR:-${IECODE_ROOT}/data}"
 
 # Engine & Language Bindings (Rust NIE, C# IECODE, C++ iecode-cpp, Python)
-export NIE_GAME_DIR="${NIE_GAME_DIR:-${IECODE_ROOT}}"
+export NIE_GAME_DIR="${NIE_GAME_DIR:-$HOME/.local/share/Steam/iecode/inazuma}"
 export IEVR_GAME_DIR="${IEVR_GAME_DIR:-${NIE_GAME_DIR}}"
 export NIE_GAME_PATH="${NIE_GAME_PATH:-${NIE_GAME_DIR}}"
 export NIE_REPO="${NIE_REPO:-${IECODE_ROOT}}"
@@ -37,8 +40,9 @@ export CPK_DIR="${CPK_DIR:-${IECODE_DATA_DIR}/packs}"
 export SQLITE_DB_PATH="${SQLITE_DB_PATH:-${IECODE_ROOT}/var/mirror.sqlite}"
 export NIERS_MIRROR="${NIERS_MIRROR:-${SQLITE_DB_PATH}}"
 export NIE_DB="${NIE_DB:-${SQLITE_DB_PATH}}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/iecode}"
-export NIE_PG_URL="${NIE_PG_URL:-${DATABASE_URL}}"
+if [ -n "${DATABASE_URL:-}" ]; then
+    export NIE_PG_URL="${NIE_PG_URL:-$DATABASE_URL}"
+fi
 
 # Ports & Services
 export MODEL_SERVE_PORT="${MODEL_SERVE_PORT:-8790}"

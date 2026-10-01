@@ -31,26 +31,36 @@ nie_path_dedupe() {
 }
 
 if [ -r "$HOME/.config/nie/environment.env" ]; then
+    nie_restore_allexport=0
+    case $- in *a*) nie_restore_allexport=1 ;; esac
     set -a
     # shellcheck disable=SC1091
     . "$HOME/.config/nie/environment.env"
-    set +a
+    [ "$nie_restore_allexport" -eq 1 ] || set +a
+    unset nie_restore_allexport
 fi
 
 if [ -r "$nie_env_root/.env.local" ]; then
+    nie_restore_allexport=0
+    case $- in *a*) nie_restore_allexport=1 ;; esac
     set -a
     # shellcheck disable=SC1091
     . "$nie_env_root/.env.local"
-    set +a
+    [ "$nie_restore_allexport" -eq 1 ] || set +a
+    unset nie_restore_allexport
 elif [ -r "$nie_env_root/.env" ]; then
+    nie_restore_allexport=0
+    case $- in *a*) nie_restore_allexport=1 ;; esac
     set -a
     # shellcheck disable=SC1091
     . "$nie_env_root/.env"
-    set +a
+    [ "$nie_restore_allexport" -eq 1 ] || set +a
+    unset nie_restore_allexport
 fi
 
-export NIE_REPO="${NIE_REPO:-${NIE_REPO:-$nie_env_root}}"
-export NIE_REPO="${NIE_REPO:-$NIE_REPO}"
+export NIE_REPO="${NIE_REPO:-$nie_env_root}"
+export NIE_REPO_ROOT="${NIE_REPO_ROOT:-$nie_env_root}"
+export IECODE_ROOT="${IECODE_ROOT:-$nie_env_root}"
 export NIE_GAME_DIR="${NIE_GAME_DIR:-$HOME/.local/share/Steam/iecode/inazuma}"
 export IEVR_GAME_DIR="${IEVR_GAME_DIR:-$NIE_GAME_DIR}"
 export NIE_GAME_PATH="${NIE_GAME_PATH:-$NIE_GAME_DIR}"
@@ -62,7 +72,7 @@ export NIE_ATLAS_DB="${NIE_ATLAS_DB:-$nie_env_root/var/nie-atlas.sqlite}"
 export NIE_WIKI_DB="${NIE_WIKI_DB:-$nie_env_root/var/aphrody-nie-wiki.sqlite}"
 
 # ── Compiler Caching & Fast Linking (2026 Optimization) ──────────────────────
-if [ -z "${RUSTC_WRAPPER:-}" ] && command -v sccache >/dev/null 2>&1; then
+if [ "${RUSTC_WRAPPER+x}" != x ] && command -v sccache >/dev/null 2>&1; then
     export RUSTC_WRAPPER=sccache
     export SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}"
     export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
