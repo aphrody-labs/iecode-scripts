@@ -229,7 +229,7 @@ sqlite3 $Distant/data/anime/episodes.db ".backup '$tmp/episodes.db'"
         $n = @(Get-ChildItem (Join-Path $Root 'data\re') -File -Recurse).Count
         Ok "data\re\ — $n fichiers"
     } else {
-        Note 'data\re\ non copié — régénérable par scripts/extract_funclua_table.py'
+        Note 'data\re\ non copié — régénérable par scripts/tools/data/extract_funclua_table.py'
     }
 
     & ssh $VpsHost "rm -rf $tmp" 2>$null | Out-Null

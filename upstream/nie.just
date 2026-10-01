@@ -23,10 +23,10 @@ default:
 
 # Transfer portable docs/scripts/deployment source with a SHA-256 manifest.
 workspace-export output="var/transfers/latest":
-    bun scripts/workspace-transfer.ts export --output {{output}}
+    bun scripts/migration/workspace-transfer.ts export --output {{output}}
 
 workspace-import manifest root=".":
-    bun scripts/workspace-transfer.ts import --manifest {{manifest}} --root {{root}} --dry-run
+    bun scripts/migration/workspace-transfer.ts import --manifest {{manifest}} --root {{root}} --dry-run
 
 # --- Build -------------------------------------------------------------------
 
@@ -111,12 +111,12 @@ re-check: build
 
 # Rapport de sante RE complet (couverture + KB + EXTERN + heartbeat).
 health: build
-    bash scripts/re-health.sh
+    bash scripts/audit/re-health.sh
 
-# Rejoue les preuves uemu (scripts/validate_*.py) : N ✓ / N ✗ / N ⧗, sort en 1 si une tombe.
+# Rejoue les preuves uemu (scripts/audit/uemu/validate_*.py) : N ✓ / N ✗ / N ⧗, sort en 1 si une tombe.
 # `just preuves parabola` n'en rejoue qu'une famille ; PREUVES_TIMEOUT=30 raccourcit l'attente.
 preuves motif="":
-    bash scripts/proofs.sh {{motif}}
+    bash scripts/audit/proofs.sh {{motif}}
 
 # --- Atlas : l'index unique des surfaces RE ------------------------------------
 # Une seule base rassemble fichiers, crates, docs, digest de la KB, forge, binaires,
@@ -144,24 +144,24 @@ atlas-dupes limit="20":
 
 # Boucle autonome : mesure -> index -> classe -> agit -> re-mesure. `just atlas-loop 5` pour 5 ticks.
 atlas-loop ticks="1":
-    bash scripts/atlas-loop.sh --ticks {{ticks}}
+    bash scripts/tools/atlas-loop.sh --ticks {{ticks}}
 
 # Boucle autonome sans action (mesure et index seuls).
 atlas-watch:
-    bash scripts/atlas-loop.sh --no-act
+    bash scripts/tools/atlas-loop.sh --no-act
 
 # Publie dans ~/.local/bin les binaires Rust + les CLI Bun, par liens symboliques (aucune copie).
 # Refuse d'ecraser un executable etranger deja dans le PATH. `just installer --dry-run` pour voir.
 installer *args:
-    bash scripts/installer-binaires.sh {{args}}
+    bash scripts/dev/installer-binaires.sh {{args}}
 
 # Verifie que les commandes du depot sont publiees et que le proprietaire Rust repond.
 outils:
-    bash scripts/data-pipeline.sh --verif-seule
+    bash scripts/tools/data/data-pipeline.sh --verif-seule
 
 # Chaine complete des donnees : outils Rust -> wiki -> 4 exports, via le PATH.
 donnees:
-    bash scripts/data-pipeline.sh
+    bash scripts/tools/data/data-pipeline.sh
 
 # --- Regen des artefacts var/ ------------------------------------------------
 
@@ -246,7 +246,7 @@ verify:
     if command -v powershell.exe > /dev/null 2>&1; then
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-monorepo.ps1
     else
-        bun run scripts/surfaces.ts gate
+        bun run scripts/tools/surfaces.ts gate
         bun run typecheck:scripts
         bun run docs:check
     fi
@@ -263,11 +263,11 @@ audit:
 
 # Lance la boucle d'exécution autonome en arrière-plan (Lead Agent + Auditeur Indépendant)
 autopilot *args:
-    bash scripts/autopilot.sh {{args}}
+    bash scripts/tools/autopilot.sh {{args}}
 
 # Exécute un tick unique de l'usine autonome (mesure, implémente, vérifie, audite)
 autopilot-tick:
-    bash scripts/autopilot.sh --once
+    bash scripts/tools/autopilot.sh --once
 
 # Surveille la santé et la disponibilité du serveur d'assemblage 3D & textures ML/Game (port 8790)
 model-serve-health:
@@ -285,20 +285,20 @@ model-serve-prewarm:
 
 # Les cinq surfaces et le nombre de crates dont chacune est construite.
 surfaces:
-    bun run scripts/surfaces.ts list
+    bun run scripts/tools/surfaces.ts list
 
 # Quelles surfaces le diff courant peut-il avoir cassées.
 surfaces-plan base="origin/main":
-    bun run scripts/surfaces.ts plan --base {{base}}
+    bun run scripts/tools/surfaces.ts plan --base {{base}}
 
 # La porte, cadrée : `just porte` sur le diff, `just porte site` sur une surface.
 porte surface="":
-    bun run scripts/surfaces.ts gate {{surface}}
+    bun run scripts/tools/surfaces.ts gate {{surface}}
 
 # Construire puis vérifier l'artefact d'une surface.
 surface-build surface:
-    bun run scripts/surfaces.ts build {{surface}}
-    bun run scripts/surfaces.ts smoke {{surface}}
+    bun run scripts/tools/surfaces.ts build {{surface}}
+    bun run scripts/tools/surfaces.ts smoke {{surface}}
 
 # Les deux portes INTER-HÔTES : le même Rust compilé pour wasm32 et pour l'hôte doit rendre la
 # même chose. Aucun test unitaire ne les remplace — ils ont déjà attrapé un module publié plus

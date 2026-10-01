@@ -33,7 +33,7 @@ class PackageModes(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "Windows batch dispatch")
     def test_windows_default_local_and_explicit_official(self):
         shutil.copy(ROOT / "build.bat", self.root)
-        (self.root / "scripts/build.ps1").write_text('''
+        (self.root / "scripts/build/build.ps1").write_text('''
 param([string]$EnvironmentFile, [string]$Action, [switch]$Official, [Alias("ForcePackage")][switch]$Development)
 $mode = if ($Official) { '1' } else { '0' }
 @('set "RUZU_BUILD_ACTION=package"', 'set "RUZU_BUILD_PROFILE=release"',
