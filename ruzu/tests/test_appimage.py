@@ -11,8 +11,8 @@ import unittest
 from unittest.mock import patch
 from contextlib import redirect_stdout
 
-ROOT = Path(__file__).resolve().parents[2]
-SPEC = importlib.util.spec_from_file_location("package_appimage", ROOT / "scripts/package-appimage.py")
+ROOT = Path(__file__).resolve().parents[3]
+SPEC = importlib.util.spec_from_file_location("package_appimage", ROOT / "scripts/ruzu/package-appimage.py")
 PACKAGE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(PACKAGE)
 

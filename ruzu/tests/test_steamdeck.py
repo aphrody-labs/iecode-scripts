@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def load(name, path):
@@ -17,8 +17,8 @@ def load(name, path):
     return module
 
 
-HOST = load("steamdeck_host", "scripts/package-steamdeck.py")
-PACKAGE = load("steamdeck_package", "scripts/steamdeck/package.py")
+HOST = load("steamdeck_host", "scripts/ruzu/package-steamdeck.py")
+PACKAGE = load("steamdeck_package", "scripts/ruzu/steamdeck/package.py")
 
 
 class SteamDeckTests(unittest.TestCase):
