@@ -11,6 +11,7 @@ strncmp standard renvoyant -1/0/1. Fuzz LCG déterministe couvrant :
   - page-offset de str2 proche de 0xff8 (bascule fast/slow path).
 Lance depuis scripts/ :  uv run scripts/audit/uemu/validate_strncmp.py
 """
+
 import sys
 from uemu import Emu, SCRATCH
 
@@ -66,7 +67,7 @@ def gen_case(rng):
         b = bytes(rng.rng(256) for _ in range(BUF))
         if rng.rng(2):
             k = rng.rng(BUF)
-            b = b[:k] + b"\x00" + b[k + 1:]
+            b = b[:k] + b"\x00" + b[k + 1 :]
         b1 = b
         b2 = b
     elif mode == 1:
@@ -77,14 +78,14 @@ def gen_case(rng):
         d = rng.rng(255) + 1
         while d == b[k]:
             d = rng.rng(255) + 1
-        b2 = b[:k] + bytes([d]) + b[k + 1:]
+        b2 = b[:k] + bytes([d]) + b[k + 1 :]
     elif mode == 2:
         # null commun précoce (doit court-circuiter)
         b1 = bytes(rng.rng(256) for _ in range(BUF))
         b2 = bytes(rng.rng(256) for _ in range(BUF))
         k = rng.rng(BUF)
-        b1 = b1[:k] + b"\x00" + b1[k + 1:]
-        b2 = b2[:k] + b"\x00" + b2[k + 1:]
+        b1 = b1[:k] + b"\x00" + b1[k + 1 :]
+        b2 = b2[:k] + b"\x00" + b2[k + 1 :]
     elif mode == 3:
         # tout octet 0xff vs variations (bord octet non signé)
         b1 = bytes([0xFF] * BUF)
@@ -103,14 +104,14 @@ def main():
 
     # cas dirigés
     directed = [
-        (b"\x00" * 64, b"\x00" * 64, 0, 0, 0),          # count=0
+        (b"\x00" * 64, b"\x00" * 64, 0, 0, 0),  # count=0
         (b"abc\x00" + b"\x00" * 60, b"abc\x00" + b"\x00" * 60, 0, 0, 10),  # égaux + null
         (b"abc\x00" + b"\x00" * 60, b"abd\x00" + b"\x00" * 60, 0, 0, 10),  # diff après 2
-        (b"abc\x00" + b"\x00" * 60, b"abd\x00" + b"\x00" * 60, 0, 0, 2),   # diff hors count
-        (b"\xff" + b"a" * 63, b"\x01" + b"a" * 63, 0, 0, 5),               # 0xff>0x01 → 1
-        (b"\x01" + b"a" * 63, b"\xff" + b"a" * 63, 0, 0, 5),               # 0x01<0xff → -1
-        (bytes(range(64)), bytes(range(64)), 3, 5, 40),                    # alignements impairs
-        (bytes(range(1, 65)), bytes(range(1, 65)), 0, 0, 48),              # fast path long, no null
+        (b"abc\x00" + b"\x00" * 60, b"abd\x00" + b"\x00" * 60, 0, 0, 2),  # diff hors count
+        (b"\xff" + b"a" * 63, b"\x01" + b"a" * 63, 0, 0, 5),  # 0xff>0x01 → 1
+        (b"\x01" + b"a" * 63, b"\xff" + b"a" * 63, 0, 0, 5),  # 0x01<0xff → -1
+        (bytes(range(64)), bytes(range(64)), 3, 5, 40),  # alignements impairs
+        (bytes(range(1, 65)), bytes(range(1, 65)), 0, 0, 48),  # fast path long, no null
     ]
 
     n_ok = 0
@@ -120,7 +121,9 @@ def main():
         exp = mirror(b1, b2, count)
         got = oracle(e, b1, b2, a1, a2, count)
         if exp != got:
-            fails.append((idx, b1[:count + 2].hex(), b2[:count + 2].hex(), a1, a2, count, exp, got))
+            fails.append(
+                (idx, b1[: count + 2].hex(), b2[: count + 2].hex(), a1, a2, count, exp, got)
+            )
             if len(fails) > 12:
                 break
         else:

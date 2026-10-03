@@ -1,4 +1,5 @@
 """Exercise release sequencing against disposable real Git remotes, no builds."""
+
 import importlib.util
 from pathlib import Path
 import subprocess
@@ -10,7 +11,8 @@ from unittest.mock import patch
 sys.dont_write_bytecode = True
 
 SPEC = importlib.util.spec_from_file_location(
-    "release_package", Path(__file__).resolve().parents[1] / "release-package.py")
+    "release_package", Path(__file__).resolve().parents[1] / "release-package.py"
+)
 release = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(release)
 
@@ -24,24 +26,34 @@ class GitIndexLockRetries(unittest.TestCase):
 
     def test_transient_lock_retries_add_and_commit(self):
         for command in ("add", "commit"):
-            with self.subTest(command=command), patch.object(release.subprocess, "run",
-                    side_effect=[self.busy(), self.result(0)]) as process, \
-                    patch.object(release.time, "sleep") as sleep:
+            with (
+                self.subTest(command=command),
+                patch.object(
+                    release.subprocess, "run", side_effect=[self.busy(), self.result(0)]
+                ) as process,
+                patch.object(release.time, "sleep") as sleep,
+            ):
                 release.run(Path("."), "git", command)
                 self.assertEqual(process.call_count, 2)
                 sleep.assert_called_once_with(1)
 
     def test_persistent_lock_is_bounded(self):
-        with patch.object(release.subprocess, "run", return_value=self.busy()) as process, \
-                patch.object(release.time, "sleep") as sleep:
+        with (
+            patch.object(release.subprocess, "run", return_value=self.busy()) as process,
+            patch.object(release.time, "sleep") as sleep,
+        ):
             with self.assertRaises(subprocess.CalledProcessError):
                 release.run(Path("."), "git", "add")
             self.assertEqual(process.call_count, release.INDEX_LOCK_ATTEMPTS)
             self.assertEqual(sleep.call_count, release.INDEX_LOCK_ATTEMPTS - 1)
 
     def test_unrelated_failure_is_not_retried(self):
-        with patch.object(release.subprocess, "run", return_value=self.result(128, "fatal: bad path\n")) as process, \
-                patch.object(release.time, "sleep") as sleep:
+        with (
+            patch.object(
+                release.subprocess, "run", return_value=self.result(128, "fatal: bad path\n")
+            ) as process,
+            patch.object(release.time, "sleep") as sleep,
+        ):
             with self.assertRaises(subprocess.CalledProcessError):
                 release.run(Path("."), "git", "commit")
             process.assert_called_once()
@@ -57,9 +69,11 @@ class ReleasePackage(unittest.TestCase):
         self.repo.mkdir()
         self.remote = root / "origin.git"
         subprocess.run(["git", "init", "--bare", "-q", str(self.remote)], check=True)
-        for args in [("init", "-q", "-b", "main"),
-                     ("config", "user.name", "Test"),
-                     ("config", "user.email", "test@example.invalid")]:
+        for args in [
+            ("init", "-q", "-b", "main"),
+            ("config", "user.name", "Test"),
+            ("config", "user.email", "test@example.invalid"),
+        ]:
             release.git(self.repo, *args)
         (self.repo / "Cargo.toml").write_text('[workspace.package]\nversion = "0.0.4"\n')
         (self.repo / "Cargo.lock").write_text("fixture\n")
@@ -83,7 +97,10 @@ class ReleasePackage(unittest.TestCase):
         self.addCleanup(self.run_patch.stop)
 
     def invoke(self, build, answers=("", "y")):
-        with patch("builtins.input", side_effect=answers), patch.object(release, "build", side_effect=build):
+        with (
+            patch("builtins.input", side_effect=answers),
+            patch.object(release, "build", side_effect=build),
+        ):
             release.release(self.repo, "windows")
 
     def test_success_build_before_tag_and_atomic_publication(self):
@@ -99,7 +116,9 @@ class ReleasePackage(unittest.TestCase):
         commit = release.git(self.repo, "rev-parse", "HEAD")
         self.assertNotEqual(commit, self.original)
         self.assertEqual(release.git(self.repo, "cat-file", "-t", "v0.0.5"), "tag")
-        self.assertEqual(release.git(self.repo, "tag", "-l", "v0.0.5", "--format=%(contents)"), "v0.0.5")
+        self.assertEqual(
+            release.git(self.repo, "tag", "-l", "v0.0.5", "--format=%(contents)"), "v0.0.5"
+        )
         self.assertIn(commit, release.git(self.repo, "ls-remote", "origin", "refs/heads/main"))
         self.assertIn("v0.0.5", release.git(self.repo, "ls-remote", "--tags", "origin"))
         self.assertIn('version = "0.0.5"', (self.repo / "Cargo.toml").read_text())
@@ -108,17 +127,22 @@ class ReleasePackage(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.invoke(lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("build failed")))
         self.assertNotIn("v0.0.5", release.git(self.repo, "tag").splitlines())
-        self.assertIn(self.original, release.git(self.repo, "ls-remote", "origin", "refs/heads/main"))
+        self.assertIn(
+            self.original, release.git(self.repo, "ls-remote", "origin", "refs/heads/main")
+        )
 
     def test_failed_packaging_keeps_local_tag_but_does_not_publish(self):
         def build(repo, platform, package, skip_deps):
             if package:
                 raise RuntimeError("NSIS failed")
+
         with self.assertRaises(RuntimeError):
             self.invoke(build)
         self.assertIn("v0.0.5", release.git(self.repo, "tag").splitlines())
         self.assertNotIn("v0.0.5", release.git(self.repo, "ls-remote", "--tags", "origin"))
-        self.assertIn(self.original, release.git(self.repo, "ls-remote", "origin", "refs/heads/main"))
+        self.assertIn(
+            self.original, release.git(self.repo, "ls-remote", "origin", "refs/heads/main")
+        )
 
     def test_dirty_checkout_refused(self):
         (self.repo / "notes.txt").write_text("user notes")
@@ -140,9 +164,11 @@ class ReleasePackage(unittest.TestCase):
         def build(repo, platform, package, skip_deps):
             if package:
                 tree = release.git(repo, "rev-parse", "HEAD^{tree}")
-                competitor = release.git(repo, "commit-tree", tree, "-p", self.original,
-                                         "-m", "concurrent remote change")
+                competitor = release.git(
+                    repo, "commit-tree", tree, "-p", self.original, "-m", "concurrent remote change"
+                )
                 release.git(repo, "push", "origin", f"{competitor}:refs/heads/main")
+
         with self.assertRaises(subprocess.CalledProcessError):
             self.invoke(build)
         self.assertNotIn("v0.0.5", release.git(self.repo, "ls-remote", "--tags", "origin"))

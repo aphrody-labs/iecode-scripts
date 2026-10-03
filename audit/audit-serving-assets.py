@@ -162,7 +162,9 @@ def auditer(ext: str, total: int, chemins: list[str]) -> Resultat:
 
         if gabarit:
             sans_ext = chemin.rsplit(".", 1)[0]
-            url = AMONT + gabarit.format(chemin=urllib.parse.quote(chemin), sans_ext=urllib.parse.quote(sans_ext))
+            url = AMONT + gabarit.format(
+                chemin=urllib.parse.quote(chemin), sans_ext=urllib.parse.quote(sans_ext)
+            )
             code, octets, _ = demander(url)
             if code == 200 and octets > 0:
                 res.decode_ok += 1
@@ -186,7 +188,10 @@ def main() -> int:
     ap.add_argument("--min", type=int, default=0, help="ignore les extensions sous ce compte")
     args = ap.parse_args()
 
-    for nom, url in (("nie-site", f"{SITE}/healthz"), ("aphrody-nie-model-serve", f"{AMONT}/health")):
+    for nom, url in (
+        ("nie-site", f"{SITE}/healthz"),
+        ("aphrody-nie-model-serve", f"{AMONT}/health"),
+    ):
         code, _, _ = demander(url)
         if code != 200:
             print(f"{nom} ne repond pas ({url} -> {code}) — audit impossible", file=sys.stderr)
@@ -224,8 +229,10 @@ def main() -> int:
 
     print("-" * 52)
     print(f"{'TOTAL':<10} {total_vfs:>9}")
-    print(f"\nOctets bruts servis a 100 % : {couvert_brut} fichiers sur {total_vfs} "
-          f"({100.0 * couvert_brut / total_vfs:.1f} %)")
+    print(
+        f"\nOctets bruts servis a 100 % : {couvert_brut} fichiers sur {total_vfs} "
+        f"({100.0 * couvert_brut / total_vfs:.1f} %)"
+    )
 
     incertains = [r for r in resultats if r.indetermines]
     if incertains:
@@ -243,8 +250,10 @@ def main() -> int:
 
     vides = [r for r in resultats if not r.echantillon]
     if vides:
-        print(f"\n{len(vides)} extension(s) dont l'echantillonnage n'a rien rendu : "
-              + ", ".join(f".{r.extension}" for r in vides))
+        print(
+            f"\n{len(vides)} extension(s) dont l'echantillonnage n'a rien rendu : "
+            + ", ".join(f".{r.extension}" for r in vides)
+        )
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as f:

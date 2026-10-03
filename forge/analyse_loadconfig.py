@@ -27,11 +27,19 @@ def main() -> None:
     s = lc.struct
     base = pe.OPTIONAL_HEADER.ImageBase
     champs = [
-        "Size", "GuardCFCheckFunctionPointer", "GuardCFDispatchFunctionPointer",
-        "GuardCFFunctionTable", "GuardCFFunctionCount", "GuardFlags",
-        "GuardAddressTakenIatEntryTable", "GuardAddressTakenIatEntryCount",
-        "GuardLongJumpTargetTable", "GuardLongJumpTargetCount",
-        "SEHandlerTable", "SEHandlerCount", "DynamicValueRelocTableOffset",
+        "Size",
+        "GuardCFCheckFunctionPointer",
+        "GuardCFDispatchFunctionPointer",
+        "GuardCFFunctionTable",
+        "GuardCFFunctionCount",
+        "GuardFlags",
+        "GuardAddressTakenIatEntryTable",
+        "GuardAddressTakenIatEntryCount",
+        "GuardLongJumpTargetTable",
+        "GuardLongJumpTargetCount",
+        "SEHandlerTable",
+        "SEHandlerCount",
+        "DynamicValueRelocTableOffset",
     ]
     for c in champs:
         v = getattr(s, c, None)
@@ -49,19 +57,26 @@ def main() -> None:
     stride = 4 + ((flags >> 28) & 0xF)
     rva_tbl = tbl - base
     taille = cnt * stride
-    print(f"\ntable CFG : rva=0x{rva_tbl:x} entrees={cnt} stride={stride} "
-          f"taille={taille} o ({100 * taille / pe.OPTIONAL_HEADER.SizeOfImage:.2f}% de l'image)")
+    print(
+        f"\ntable CFG : rva=0x{rva_tbl:x} entrees={cnt} stride={stride} "
+        f"taille={taille} o ({100 * taille / pe.OPTIONAL_HEADER.SizeOfImage:.2f}% de l'image)"
+    )
 
-    sec = next(x for x in pe.sections
-               if x.VirtualAddress <= rva_tbl < x.VirtualAddress + x.Misc_VirtualSize)
-    print(f"  vit dans {sec.Name.rstrip(chr(0).encode()).decode()} "
-          f"({taille} o = {100 * taille / sec.Misc_VirtualSize:.2f}% de la section)")
+    sec = next(
+        x
+        for x in pe.sections
+        if x.VirtualAddress <= rva_tbl < x.VirtualAddress + x.Misc_VirtualSize
+    )
+    print(
+        f"  vit dans {sec.Name.rstrip(chr(0).encode()).decode()} "
+        f"({taille} o = {100 * taille / sec.Misc_VirtualSize:.2f}% de la section)"
+    )
 
     data = pe.get_memory_mapped_image()
     rvas = []
     for i in range(cnt):
         off = rva_tbl + i * stride
-        rvas.append(int.from_bytes(data[off:off + 4], "little"))
+        rvas.append(int.from_bytes(data[off : off + 4], "little"))
     tri = rvas == sorted(rvas)
     print(f"  strictement croissante : {tri}")
     print(f"  premiere=0x{rvas[0]:x} derniere=0x{rvas[-1]:x}")

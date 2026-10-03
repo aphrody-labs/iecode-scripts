@@ -16,6 +16,7 @@ Le chemin de DELEGATION (`[+0xC8] > 1` et `r9b == 0` -> `jmp [vt+1C8h]`) est evi
 
 Usage : NIE_EXE=dist/nie.exe python3 scripts/audit/uemu/validate_listview_page.py
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -36,9 +37,9 @@ def build(total, columns, top, anchor, selected, visible, margin, flag1b3=0):
     o = bytearray(SIZE)
     struct.pack_into("<i", o, 0x0C0, visible)
     struct.pack_into("<i", o, 0x0C4, margin)
-    struct.pack_into("<i", o, 0x0C8, 1)       # coupe la delegation
+    struct.pack_into("<i", o, 0x0C8, 1)  # coupe la delegation
     struct.pack_into("<i", o, 0x0D4, columns)
-    struct.pack_into("<i", o, 0x0E8, 1)       # diviseur du chemin de butee
+    struct.pack_into("<i", o, 0x0E8, 1)  # diviseur du chemin de butee
     struct.pack_into("<i", o, 0x128, 0)
     struct.pack_into("<i", o, 0x12C, top)
     struct.pack_into("<i", o, 0x134, anchor)
@@ -66,7 +67,7 @@ def mirror(case, forward):
         return (top, anchor, selected), False
     quotient = int(total / columns)
     remainder = total - quotient * columns
-    rows = quotient if selected >= remainder else quotient + 1   # cmovge
+    rows = quotient if selected >= remainder else quotient + 1  # cmovge
 
     if forward:
         last = rows - 1
@@ -76,7 +77,7 @@ def mirror(case, forward):
         if new_anchor > last:
             new_anchor = last
         if margin >= rows:
-            return (top, new_anchor, selected), True             # seule l'ancre bouge
+            return (top, new_anchor, selected), True  # seule l'ancre bouge
         if flag == 0:
             new_top = new_anchor - visible - margin + 1
             return (new_top, new_anchor, selected), True
@@ -93,7 +94,7 @@ def mirror(case, forward):
         return (top, new_anchor, selected), True
     new_top = new_anchor - visible
     if flag != 0:
-        candidate = max(top - margin, -visible)                  # cmovge sur -visible
+        candidate = max(top - margin, -visible)  # cmovge sur -visible
         if candidate < new_top:
             new_top = candidate
             new_anchor = candidate + visible
@@ -103,8 +104,14 @@ def mirror(case, forward):
 def emu(e, case, forward, moved):
     obj = build(**case)
     out = e.call(
-        FN, rcx=THIS, rdx=1 if forward else 0, r8=0, r9=1,
-        mem={THIS: obj}, read={THIS: SIZE}, stop=STOP_MOVED if moved else STOP_STILL,
+        FN,
+        rcx=THIS,
+        rdx=1 if forward else 0,
+        r8=0,
+        r9=1,
+        mem={THIS: obj},
+        read={THIS: SIZE},
+        stop=STOP_MOVED if moved else STOP_STILL,
     )
     got = out["mem"][THIS]
     return tuple(i32(struct.unpack_from("<i", got, off)[0]) for off in (0x12C, 0x134, 0x138))

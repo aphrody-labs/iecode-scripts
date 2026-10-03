@@ -12,6 +12,7 @@ instancié aux strides {0xc, 0x10, 0x18} / key_base {8, 8, 0}. Triple-validation
 miroirs (linéaire indexé par nœud ; trié sur clés triées) sont stride/offset-agnostiques. Sort 0 si
 byte-exact. Fuzz seedé des deux modes (chaînes linéaires acycliques).
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -25,7 +26,7 @@ NOFF = 0x600  # déplacé : stride 0x28 × ~20 entrées dépasse 0x200 (collisio
 SOFF = 0x800  # mode trié (après les nœuds)
 CAP = 0x100
 STRIDE = 0x28  # 4e instanciation
-KEY_BASE = 0   # clé @ entrée+0 (PAS +8 comme les familles 0xc/0x10)
+KEY_BASE = 0  # clé @ entrée+0 (PAS +8 comme les familles 0xc/0x10)
 
 
 def _hdr(head, count, sorted_off):
@@ -168,7 +169,9 @@ for _ in range(180):
         if er != mr:
             fails += 1
             if fails <= 8:
-                print(f"  ✗ LIN head={head} key={key} entries={entries} next={nexts}: uemu={er} ≠ {mr}")
+                print(
+                    f"  ✗ LIN head={head} key={key} entries={entries} next={nexts}: uemu={er} ≠ {mr}"
+                )
 
 # Trié : arbres triés aléatoires avec doublons, cibles présentes/absentes/bords.
 for _ in range(400):
@@ -187,5 +190,7 @@ for _ in range(400):
             if fails <= 8:
                 print(f"  ✗ SORT keys={keys} perm={perm} tg={tg & 0xFFFFFFFF:#x}: uemu={er} ≠ {mr}")
 
-print(f"intrusive_map (stride 0x28, FUN_1404523c0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+print(
+    f"intrusive_map (stride 0x28, FUN_1404523c0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

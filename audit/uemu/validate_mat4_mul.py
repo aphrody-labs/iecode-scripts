@@ -5,6 +5,7 @@ result = A * B   (A = param_2/rdx, B = param_3/r8, out = param_1/rcx)
 result[i] = A[i][0]*B[0] + fma(A[i][1],B[1], ...) + fma(A[i][2],B[2]) + fma(A[i][3],B[3])
 où B[k] est la ligne k de B, A[i][k] un scalaire broadcast, ordre d'accu FMA single-rounding.
 """
+
 import struct
 import math
 
@@ -64,7 +65,7 @@ class LCG:
             mant = u & 0x7FFFFF
             exp = ((u >> 23) % 41) - 20
             sign = -1.0 if (u >> 31) else 1.0
-            v = (1.0 + mant / float(1 << 23)) * (2.0 ** exp)
+            v = (1.0 + mant / float(1 << 23)) * (2.0**exp)
             return f32(sign * v)
         if kind == 1:  # uniforme [-1000,1000]
             return (u / 0xFFFFFFFF) * 2000.0 - 1000.0
@@ -143,7 +144,9 @@ def main():
 
     total = len(cases)
     validated = total - fails - nan_skipped
-    print(f"cas total={total}  validés(byte-exact)={validated}  sautés(NaN/inf)={nan_skipped}  fails={fails}")
+    print(
+        f"cas total={total}  validés(byte-exact)={validated}  sautés(NaN/inf)={nan_skipped}  fails={fails}"
+    )
     if fails == 0 and validated > 0:
         print("BYTE-EXACT")
         return 0

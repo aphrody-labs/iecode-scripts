@@ -34,7 +34,10 @@ def install(destination: Path, cache: Path) -> None:
     if not archive.exists():
         with tempfile.TemporaryDirectory(prefix=".moltenvk-", dir=cache) as temporary:
             download = Path(temporary) / "archive.tar"
-            with urllib.request.urlopen(URL, timeout=120) as response, download.open("wb") as output:
+            with (
+                urllib.request.urlopen(URL, timeout=120) as response,
+                download.open("wb") as output,
+            ):
                 shutil.copyfileobj(response, output)
             verify(download)
             os.replace(download, archive)
@@ -57,7 +60,8 @@ def install(destination: Path, cache: Path) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
-    parser.add_argument("--cache", type=Path,
-                        default=Path(__file__).resolve().parents[2] / "target/deps/moltenvk")
+    parser.add_argument(
+        "--cache", type=Path, default=Path(__file__).resolve().parents[2] / "target/deps/moltenvk"
+    )
     args = parser.parse_args()
     install(args.destination, args.cache)

@@ -12,6 +12,7 @@ chaque entrée testée comme nœud courant, comparé byte-exact à l'oracle uemu
 formé* — `node[+4]` = permutation inverse (position triée de l'entrée) — domaine réel de la fonction.
 Sort 0 si byte-exact. Miroir = port `aphrody_nie_core::intrusive_map::IntrusiveMapSorted::next_equal`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -100,5 +101,7 @@ for _ in range(900):
             fails += 1
             if fails <= 10:
                 print(f"  ✗ keys={keys} sorted={perm} cur={cur_entry}: uemu={er} ≠ miroir={mr}")
-print(f"intrusive_map (next-equal): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+print(
+    f"intrusive_map (next-equal): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

@@ -31,8 +31,9 @@ class MoltenVK(unittest.TestCase):
 
     def test_verified_download_and_offline_cache(self):
         with patch.object(moltenvk, "SHA512", hashlib.sha512(self.archive).hexdigest()):
-            with patch.object(moltenvk.urllib.request, "urlopen",
-                              return_value=io.BytesIO(self.archive)) as download:
+            with patch.object(
+                moltenvk.urllib.request, "urlopen", return_value=io.BytesIO(self.archive)
+            ) as download:
                 moltenvk.install(self.destination, self.cache)
                 download.assert_called_once_with(moltenvk.URL, timeout=120)
             self.assertEqual(self.destination.read_bytes(), b"library")
@@ -42,8 +43,7 @@ class MoltenVK(unittest.TestCase):
                 download.assert_not_called()
 
     def test_invalid_download_never_installed_or_cached(self):
-        with patch.object(moltenvk.urllib.request, "urlopen",
-                          return_value=io.BytesIO(b"invalid")):
+        with patch.object(moltenvk.urllib.request, "urlopen", return_value=io.BytesIO(b"invalid")):
             with self.assertRaisesRegex(ValueError, "SHA-512 mismatch"):
                 moltenvk.install(self.destination, self.cache)
         self.assertFalse(self.destination.exists())

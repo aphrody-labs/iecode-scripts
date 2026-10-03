@@ -30,6 +30,7 @@ clé, calcul d'index, validation contre la table) est exécuté par le binaire r
 
 Lancer : uv run scripts/audit/uemu/validate_role_handle_lookup.py   (exit 0 si byte-exact)
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -44,6 +45,7 @@ KEY_OFF = 0x368
 MAX_IDX = 0x60
 
 # --- mirroir Python de la sémantique (le "port") -----------------------------------------------
+
 
 def expected(b, fallback_key, role_index, role_keys, slot_value):
     """Renvoie l'index résolu (int) ou None. `slot_value` = clé du record à l'index calculé."""
@@ -63,13 +65,14 @@ def expected(b, fallback_key, role_index, role_keys, slot_value):
 
 # --- harnais uemu ------------------------------------------------------------------------------
 
+
 def main():
     e = Emu()
     S = e.SCRATCH
-    T = S + 0x10000   # base de table
-    P = S + 0x40000   # param_1
+    T = S + 0x10000  # base de table
+    P = S + 0x40000  # param_1
     VT = S + 0x50000  # vtable
-    G = S + 0x60000   # gadgets de l'appel virtuel : un par valeur d'octet (jamais réécrits)
+    G = S + 0x60000  # gadgets de l'appel virtuel : un par valeur d'octet (jamais réécrits)
 
     # Pré-écriture des 256 gadgets `mov al, imm8 ; ret` à des adresses DISTINCTES et FIGÉES.
     # (Réécrire des octets de code à la même adresse entre deux appels ne purge pas le cache de
@@ -78,7 +81,9 @@ def main():
     init_mem = {}
     for bv in range(256):
         init_mem[G + bv * 0x10] = bytes([0xB0, bv, 0xC3])
-    e.call(VA, rcx=P, mem={**init_mem, GLOBAL: struct.pack("<Q", 0)})  # table=0 -> retour immédiat, écrit la mémoire
+    e.call(
+        VA, rcx=P, mem={**init_mem, GLOBAL: struct.pack("<Q", 0)}
+    )  # table=0 -> retour immédiat, écrit la mémoire
 
     def run_case(b, fallback_key, role_index, role_keys, slot_value):
         # clé attendue pour savoir à quel index écrire le record lu
@@ -91,8 +96,8 @@ def main():
         index = key & 0xFFFF
 
         mem = {}
-        mem[GLOBAL] = struct.pack("<Q", T)            # table base
-        mem[P + 0x378] = struct.pack("<Q", VT)         # vtable ptr
+        mem[GLOBAL] = struct.pack("<Q", T)  # table base
+        mem[P + 0x378] = struct.pack("<Q", VT)  # vtable ptr
         mem[VT + 0x18] = struct.pack("<Q", G + (b & 0xFF) * 0x10)  # -> gadget figé renvoyant al=b
         mem[P + 0xA4] = struct.pack("<I", fallback_key & 0xFFFFFFFF)
         mem[P + 0x391] = bytes([role_index & 0xFF])
@@ -130,27 +135,29 @@ def main():
     # 1) cas de bord ciblés
     bord = []
     # b=0, fallback
-    bord.append((0, 0x00000000, 0, [0] * 6, 0))             # key=0 -> None
-    bord.append((0, 0x00000005, 0, [0] * 6, 0x00000005))    # match index 5
-    bord.append((0, 0x00000005, 0, [0] * 6, 0x00000006))    # mismatch
-    bord.append((0, 0x0000005F, 0, [0] * 6, 0x0000005F))    # index 0x5f = dernier valide, match
-    bord.append((0, 0x00000060, 0, [0] * 6, 0x00000060))    # index 0x60 >= max -> None
-    bord.append((0, 0x00000061, 0, [0] * 6, 0x00000061))    # >= max -> None
-    bord.append((0, 0xDEAD0042, 0, [0] * 6, 0xDEAD0042))    # high16 génération, match
-    bord.append((0, 0xDEAD0042, 0, [0] * 6, 0x00000042))    # même index, clé différente -> None
-    bord.append((0, 0x00010000, 0, [0] * 6, 0x00010000))    # index 0, clé non nulle, match
-    bord.append((0, 0xFFFF0000, 0, [0] * 6, 0xFFFF0000))    # index 0, génération max, match
+    bord.append((0, 0x00000000, 0, [0] * 6, 0))  # key=0 -> None
+    bord.append((0, 0x00000005, 0, [0] * 6, 0x00000005))  # match index 5
+    bord.append((0, 0x00000005, 0, [0] * 6, 0x00000006))  # mismatch
+    bord.append((0, 0x0000005F, 0, [0] * 6, 0x0000005F))  # index 0x5f = dernier valide, match
+    bord.append((0, 0x00000060, 0, [0] * 6, 0x00000060))  # index 0x60 >= max -> None
+    bord.append((0, 0x00000061, 0, [0] * 6, 0x00000061))  # >= max -> None
+    bord.append((0, 0xDEAD0042, 0, [0] * 6, 0xDEAD0042))  # high16 génération, match
+    bord.append((0, 0xDEAD0042, 0, [0] * 6, 0x00000042))  # même index, clé différente -> None
+    bord.append((0, 0x00010000, 0, [0] * 6, 0x00010000))  # index 0, clé non nulle, match
+    bord.append((0, 0xFFFF0000, 0, [0] * 6, 0xFFFF0000))  # index 0, génération max, match
     # b!=0, branche rôle
-    bord.append((1, 0xAAAAAAAA, 0, [0x0000000A, 0, 0, 0, 0, 0], 0x0000000A))   # role 0 match
-    bord.append((1, 0xAAAAAAAA, 5, [0, 0, 0, 0, 0, 0x0000000B], 0x0000000B))   # role 5 match
-    bord.append((1, 0xAAAAAAAA, 6, [0] * 6, 0))                                # role>=6 -> key 0 -> None
-    bord.append((1, 0xAAAAAAAA, 7, [0] * 6, 0))                                # role>=6 -> None
-    bord.append((1, 0xAAAAAAAA, 0xFF, [0] * 6, 0))                             # role 255 -> None
-    bord.append((1, 0xAAAAAAAA, 3, [0, 0, 0, 0xCAFE0010, 0, 0], 0xCAFE0010))   # role 3 match w/ gen
-    bord.append((1, 0xAAAAAAAA, 3, [0, 0, 0, 0xCAFE0010, 0, 0], 0x00000010))   # role 3, mismatch
-    bord.append((1, 0xAAAAAAAA, 2, [0, 0, 0x00000000, 0, 0, 0], 0))            # role key 0 -> None
-    bord.append((0x80, 0x00000003, 0, [0] * 6, 0x00000003))                    # b sign bit set -> true branch
-    bord.append((0xFF, 0x00000003, 1, [0, 0x00000003, 0, 0, 0, 0], 0x00000003))  # b=0xff true branch role1
+    bord.append((1, 0xAAAAAAAA, 0, [0x0000000A, 0, 0, 0, 0, 0], 0x0000000A))  # role 0 match
+    bord.append((1, 0xAAAAAAAA, 5, [0, 0, 0, 0, 0, 0x0000000B], 0x0000000B))  # role 5 match
+    bord.append((1, 0xAAAAAAAA, 6, [0] * 6, 0))  # role>=6 -> key 0 -> None
+    bord.append((1, 0xAAAAAAAA, 7, [0] * 6, 0))  # role>=6 -> None
+    bord.append((1, 0xAAAAAAAA, 0xFF, [0] * 6, 0))  # role 255 -> None
+    bord.append((1, 0xAAAAAAAA, 3, [0, 0, 0, 0xCAFE0010, 0, 0], 0xCAFE0010))  # role 3 match w/ gen
+    bord.append((1, 0xAAAAAAAA, 3, [0, 0, 0, 0xCAFE0010, 0, 0], 0x00000010))  # role 3, mismatch
+    bord.append((1, 0xAAAAAAAA, 2, [0, 0, 0x00000000, 0, 0, 0], 0))  # role key 0 -> None
+    bord.append((0x80, 0x00000003, 0, [0] * 6, 0x00000003))  # b sign bit set -> true branch
+    bord.append(
+        (0xFF, 0x00000003, 1, [0, 0x00000003, 0, 0, 0, 0], 0x00000003)
+    )  # b=0xff true branch role1
 
     for c in bord:
         res, err = run_case(*c)
@@ -162,18 +169,20 @@ def main():
     # 2) fuzz aléatoire seedé
     for _ in range(600):
         b = 0 if (rnd(1) == 0) else (rnd(8) | (1 if rnd(1) else 0))  # ~moitié 0, sinon non nul
+
         # clés : parfois petites (index valide), parfois grandes, parfois 0
         def mkkey():
             r = rnd(3)
             if r == 0:
                 return 0
             if r == 1:
-                return rnd(7)                       # index 0..0x7f (autour de la limite)
+                return rnd(7)  # index 0..0x7f (autour de la limite)
             if r == 2:
-                return (rnd(16) << 16) | rnd(7)     # génération + petit index
+                return (rnd(16) << 16) | rnd(7)  # génération + petit index
             return rnd(32)
+
         fallback_key = mkkey()
-        role_index = rnd(3) if rnd(1) else rnd(8)   # souvent < 6, parfois >= 6
+        role_index = rnd(3) if rnd(1) else rnd(8)  # souvent < 6, parfois >= 6
         role_keys = [mkkey() for _ in range(6)]
         # slot : forcer un match la moitié du temps
         if b == 0:
@@ -183,9 +192,9 @@ def main():
         else:
             key = 0
         if rnd(1):
-            slot_value = key            # force match potentiel
+            slot_value = key  # force match potentiel
         else:
-            slot_value = mkkey()        # aléatoire (souvent mismatch)
+            slot_value = mkkey()  # aléatoire (souvent mismatch)
         c = (b, fallback_key, role_index, role_keys, slot_value)
         res, err = run_case(*c)
         cases += 1

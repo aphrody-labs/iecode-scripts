@@ -15,6 +15,7 @@ Mutant mais SANS vtable ni global ⇒ isolable. On compare BYTE-EXACT (valeur de
 d'en-tête mutés + champ prev du nouveau nœud de tête) à l'oracle uemu. Fuzz seedé de listes
 doublement chaînées valides (ordre aléatoire) + cas liste-vide. Miroir = port `aphrody_nie_core`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -55,8 +56,7 @@ def build(order, n_nodes):
 
 def emu_pop(e, order, n_nodes):
     hdr, data = build(order, n_nodes)
-    out = e.call(0x140453570, rcx=HDR, mem={HDR: hdr, BASE: data},
-                 read={HDR + 0x16: 6, BASE: NBUF})
+    out = e.call(0x140453570, rcx=HDR, mem={HDR: hdr, BASE: data}, read={HDR + 0x16: 6, BASE: NBUF})
     rax = out["rax"]
     popped = None if rax == 0 else (rax - BASE - NOFF) // 6
     h = out["mem"][HDR + 0x16]
@@ -120,8 +120,10 @@ for _ in range(700):
     if er != mr:
         fails += 1
         if fails <= 8:
-            print(f"  ✗ order={order}: uemu=({er[0]},{er[1]:#x},{er[2]:#x},{er[3]}) "
-                  f"mir=({mr[0]},{mr[1]:#x},{mr[2]:#x},{mr[3]}) nodes_eq={er[4]==mr[4]}")
+            print(
+                f"  ✗ order={order}: uemu=({er[0]},{er[1]:#x},{er[2]:#x},{er[3]}) "
+                f"mir=({mr[0]},{mr[1]:#x},{mr[2]:#x},{mr[3]}) nodes_eq={er[4] == mr[4]}"
+            )
 
 # Cas liste vide (curseur sentinelle) → aucune mutation, renvoie 0.
 total += 1
@@ -131,5 +133,7 @@ if er != mr:
     fails += 1
     print(f"  ✗ vide: uemu={er[:4]} mir={mr[:4]}")
 
-print(f"intrusive_map (pop_front, FUN_140453570): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+print(
+    f"intrusive_map (pop_front, FUN_140453570): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

@@ -42,9 +42,7 @@ ZUYU_CREATE_RE = re.compile(
     r"arg=0x([0-9A-Fa-f]+), stack_bottom=0x([0-9A-Fa-f]+), "
     r"priority=0x([0-9A-Fa-f]+), core_id=0x([0-9A-Fa-f\-]+)"
 )
-ZUYU_START_CALL_RE = re.compile(
-    r"svc_thread\.cpp:StartThread:\d+: called thread=0x([0-9A-Fa-f]+)"
-)
+ZUYU_START_CALL_RE = re.compile(r"svc_thread\.cpp:StartThread:\d+: called thread=0x([0-9A-Fa-f]+)")
 ZUYU_START_RESULT_RE = re.compile(
     r"StartThread result handle=0x([0-9A-Fa-f]+) tid=([0-9]+) core=([-0-9]+) "
     r"current_core=([-0-9]+) affinity=0x([0-9A-Fa-f]+) prio=([-0-9]+)"
@@ -66,11 +64,7 @@ class CreateEvent:
         return (self.entry, self.arg, self.stack, self.priority, self.requested_core)
 
     def render(self) -> str:
-        eff = (
-            f" effective_core={self.effective_core}"
-            if self.effective_core is not None
-            else ""
-        )
+        eff = f" effective_core={self.effective_core}" if self.effective_core is not None else ""
         return (
             f"entry=0x{self.entry:08X} arg=0x{self.arg:08X} stack=0x{self.stack:08X} "
             f"prio={self.priority} requested_core={self.requested_core}{eff}"
@@ -207,9 +201,7 @@ def key_normalized(evt: CreateEvent) -> tuple[int, int, int]:
 
 
 def render_normalized(evt: CreateEvent) -> str:
-    return (
-        f"entry=0x{evt.entry:08X} prio={evt.priority} requested_core={evt.requested_core}"
-    )
+    return f"entry=0x{evt.entry:08X} prio={evt.priority} requested_core={evt.requested_core}"
 
 
 def shared_prefix_len(lhs, rhs, key_fn) -> int:
@@ -303,8 +295,12 @@ def main() -> int:
     ruzu = parse_log(Path(args.ruzu_log))
     zuyu = parse_log(Path(args.zuyu_log))
 
-    print(f"ruzu creates={len(ruzu.creates)} start_calls={len(ruzu.starts_called)} start_results={len(ruzu.starts_result)}")
-    print(f"zuyu creates={len(zuyu.creates)} start_calls={len(zuyu.starts_called)} start_results={len(zuyu.starts_result)}")
+    print(
+        f"ruzu creates={len(ruzu.creates)} start_calls={len(ruzu.starts_called)} start_results={len(ruzu.starts_result)}"
+    )
+    print(
+        f"zuyu creates={len(zuyu.creates)} start_calls={len(zuyu.starts_called)} start_results={len(zuyu.starts_result)}"
+    )
 
     if args.mode == "full":
         key_fn = key_full

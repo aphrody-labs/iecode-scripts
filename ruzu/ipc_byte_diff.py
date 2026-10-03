@@ -45,7 +45,7 @@ def first_diff(a: str, b: str) -> int:
     """Byte offset (in original byte stream, not hex chars) of first difference, or -1."""
     n = min(len(a), len(b))
     for i in range(0, n, 2):
-        if a[i:i + 2] != b[i:i + 2]:
+        if a[i : i + 2] != b[i : i + 2]:
             return i // 2
     if len(a) != len(b):
         return n // 2
@@ -58,8 +58,8 @@ def hex_window(s: str, offset: int, width: int = 16) -> str:
     start_char = max(0, char_off - width)
     end_char = min(len(s), char_off + width + 2)
     pre = s[start_char:char_off]
-    cursor = s[char_off:char_off + 2] or "??"
-    post = s[char_off + 2:end_char]
+    cursor = s[char_off : char_off + 2] or "??"
+    post = s[char_off + 2 : end_char]
     return f"...{pre}[{cursor}]{post}..."
 
 
@@ -77,16 +77,20 @@ def cmd_from_req(req_hex: str) -> int:
     if len(req_hex) < 0x1C * 2:
         return -1
     try:
-        return int.from_bytes(bytes.fromhex(req_hex[0x18 * 2:0x1C * 2]), "little")
+        return int.from_bytes(bytes.fromhex(req_hex[0x18 * 2 : 0x1C * 2]), "little")
     except ValueError:
         return -1
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("a", help="reference dump (typically inline)")
     ap.add_argument("b", help="comparand dump (typically host-thread)")
-    ap.add_argument("--all", action="store_true", help="report every divergence, not just the first")
+    ap.add_argument(
+        "--all", action="store_true", help="report every divergence, not just the first"
+    )
     ap.add_argument("--limit", type=int, default=None, help="only compare first N IPCs")
     ap.add_argument("--from-seq", type=int, default=0, help="skip IPCs with seq below this")
     ap.add_argument("--quiet", action="store_true", help="suppress matching-prefix summary")
@@ -128,8 +132,10 @@ def main():
             continue
 
         if matched_in_a_row > 0 and not args.quiet:
-            print(f"[seq 0..{last_match_seq}] {matched_in_a_row} consecutive matching IPCs",
-                  file=sys.stderr)
+            print(
+                f"[seq 0..{last_match_seq}] {matched_in_a_row} consecutive matching IPCs",
+                file=sys.stderr,
+            )
             matched_in_a_row = 0
 
         divergences += 1
@@ -159,8 +165,10 @@ def main():
         return 0
 
     if len(a_entries) != len(b_entries):
-        print(f"\nNote: dumps have different totals: A={len(a_entries)}, B={len(b_entries)}",
-              file=sys.stderr)
+        print(
+            f"\nNote: dumps have different totals: A={len(a_entries)}, B={len(b_entries)}",
+            file=sys.stderr,
+        )
     return 1
 
 

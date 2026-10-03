@@ -46,7 +46,9 @@ def pdata_ranges(data: bytes) -> tuple[int, list[tuple[int, int, int]]]:
     raise SystemExit("pas de section .pdata")
 
 
-def extent(ranges: list[tuple[int, int, int]], address: int) -> tuple[int, int, list[tuple[int, int]]]:
+def extent(
+    ranges: list[tuple[int, int, int]], address: int
+) -> tuple[int, int, list[tuple[int, int]]]:
     """(start, end, chunks) for the function covering `address`, chunks chained by adjacency."""
     index = None
     for position, (start, end, _unwind) in enumerate(ranges):
@@ -67,7 +69,9 @@ def extent(ranges: list[tuple[int, int, int]], address: int) -> tuple[int, int, 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--exe", required=True)
     parser.add_argument("addresses", nargs="+", help="hex addresses inside the functions")
     parser.add_argument("--json", action="store_true")
@@ -80,7 +84,9 @@ def main() -> None:
     for text in args.addresses:
         address = int(text, 16)
         start, end, chunks = extent(ranges, address)
-        report.append({"query": address, "start": start, "end": end, "size": end - start, "chunks": chunks})
+        report.append(
+            {"query": address, "start": start, "end": end, "size": end - start, "chunks": chunks}
+        )
 
     if args.json:
         print(json.dumps(report, indent=2))
@@ -88,7 +94,9 @@ def main() -> None:
     for row in report:
         pieces = " + ".join(f"{e - s}" for s, e in row["chunks"])
         note = "" if len(row["chunks"]) == 1 else f"   <- {len(row['chunks'])} fragments : {pieces}"
-        print(f"0x{row['query']:X}  ->  0x{row['start']:X}..0x{row['end']:X}  {row['size']} o{note}")
+        print(
+            f"0x{row['query']:X}  ->  0x{row['start']:X}..0x{row['end']:X}  {row['size']} o{note}"
+        )
 
 
 if __name__ == "__main__":

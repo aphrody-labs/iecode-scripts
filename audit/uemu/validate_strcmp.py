@@ -11,10 +11,12 @@ octet-par-octet gere le reste. Les deux donnent la meme semantique strcmp non si
 On fuzze : alignements de str1, prefixes partages, chaines egales, garbage divergent
 apres le NUL (exerce la divergence de chunk au-dela du terminateur), et la garde de page.
 """
+
 import sys
 from uemu import Emu, SCRATCH
 
 VADDR = 0x14168B570
+
 
 # --- miroir Python de la semantique ---------------------------------------
 def mirror_strcmp(s1: bytes, s2: bytes) -> int:
@@ -103,17 +105,19 @@ def run():
         if got != exp:
             fails += 1
             if fails <= 20:
-                print(f"[FAIL] {tag}: got={got:#018x} exp={exp:#018x} "
-                      f"off1={off1} off2={off2} g={g} s1={s1!r} s2={s2!r}")
+                print(
+                    f"[FAIL] {tag}: got={got:#018x} exp={exp:#018x} "
+                    f"off1={off1} off2={off2} g={g} s1={s1!r} s2={s2!r}"
+                )
 
     # 1) Fuzz general : alignements varies, chaines aleatoires, parfois prefixe commun.
     for _ in range(500):
-        off1 = rng.rint(0, 7)          # exerce test cl,7 (alignement str1)
+        off1 = rng.rint(0, 7)  # exerce test cl,7 (alignement str1)
         off2 = rng.rint(0, 7)
         s1 = rand_str(rng, 24)
         kind = rng.rint(0, 3)
         if kind == 0:
-            s2 = s1                      # egales
+            s2 = s1  # egales
             one(s1, s2, off1, off2, garbage=False, eq_pad=True, tag="eq")
         elif kind == 1:
             # prefixe commun puis divergence
@@ -122,7 +126,7 @@ def run():
             s2 = pre + tail
             one(s1, s2, off1, off2, garbage=True, eq_pad=False, tag="prefix")
         elif kind == 2:
-            s2 = rand_str(rng, 24)       # independante
+            s2 = rand_str(rng, 24)  # independante
             one(s1, s2, off1, off2, garbage=True, eq_pad=False, tag="indep")
         else:
             # egales mais avec garbage divergent apres le NUL (robustesse chemin rapide)
@@ -140,11 +144,11 @@ def run():
         (b"abc", b"abd"),
         (b"abc", b"abcd"),
         (b"abcd", b"abc"),
-        (b"abcdefgh", b"abcdefgh"),         # exactement 8 (un chunk plein, pas de NUL)
+        (b"abcdefgh", b"abcdefgh"),  # exactement 8 (un chunk plein, pas de NUL)
         (b"abcdefgh", b"abcdefgi"),
-        (b"abcdefghij", b"abcdefghij"),     # > 8 : deux chunks
+        (b"abcdefghij", b"abcdefghij"),  # > 8 : deux chunks
         (b"abcdefghij", b"abcdefghik"),
-        (b"\xff", b"\x01"),                 # octets non signes
+        (b"\xff", b"\x01"),  # octets non signes
         (b"\x01", b"\xff"),
         (b"\x80abc", b"\x7fabc"),
         (b"A" * 23, b"A" * 23),
@@ -152,20 +156,21 @@ def run():
     ]
     for a in range(8):
         for s1, s2 in edge:
-            one(s1, s2, a, (a + 3) & 7, garbage=True, eq_pad=(s1 == s2),
-                tag=f"edge_a{a}")
+            one(s1, s2, a, (a + 3) & 7, garbage=True, eq_pad=(s1 == s2), tag=f"edge_a{a}")
 
     # 3) Garde de page : placer str2 a < 8 octets de la fin de page -> chemin octet.
     #    (SCRATCH+0x40000) & 0xfff == 0 ; offset 0xFFA donne page-offset 0xFFA > 0xff8.
     for pg_off in (0xFF9, 0xFFA, 0xFFC, 0xFFE):
-        for s1, s2 in [(b"abcdefghij", b"abcdefghij"),
-                       (b"abcdefghij", b"abcdefghik"),
-                       (b"hello world test", b"hello world test"),
-                       (b"hello world test", b"hello world tesu")]:
+        for s1, s2 in [
+            (b"abcdefghij", b"abcdefghij"),
+            (b"abcdefghij", b"abcdefghik"),
+            (b"hello world test", b"hello world test"),
+            (b"hello world test", b"hello world tesu"),
+        ]:
             cases += 1
             p1 = BASE1
             p2 = SCRATCH + 0x80000 + pg_off  # region distincte, pres d'un bord de page
-            eqp = (s1 == s2)
+            eqp = s1 == s2
             buf1 = build_buf(s1, BUFSZ, rng, False)
             buf2 = build_buf(s2, BUFSZ, rng, False)
             out = e.call(VADDR, rcx=p1, rdx=p2, mem={p1: buf1, p2: buf2})
@@ -173,8 +178,10 @@ def run():
             exp = mirror_strcmp(s1, s2)
             if got != exp:
                 fails += 1
-                print(f"[FAIL] pageguard off={pg_off:#x}: got={got:#018x} exp={exp:#018x} "
-                      f"s1={s1!r} s2={s2!r}")
+                print(
+                    f"[FAIL] pageguard off={pg_off:#x}: got={got:#018x} exp={exp:#018x} "
+                    f"s1={s1!r} s2={s2!r}"
+                )
 
     print(f"cas={cases} echecs={fails}")
     if fails == 0:

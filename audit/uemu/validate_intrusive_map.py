@@ -8,6 +8,7 @@ reversé (miroir du port `aphrody_nie_core::intrusive_map`). Sort 0 si byte-exac
 Layout : entrées 0x10 o (clé i32 @+0) à `base+8` ; nœuds 6 o (`next` u16 @+2) à `base+nodes_off` ;
 header `+8`=base, `+0x10`=tête, `+0x1c`=nodes_off, `+0x20`=0 (linéaire), `+0x24`=capacité.
 """
+
 import struct
 import sys
 from pathlib import Path

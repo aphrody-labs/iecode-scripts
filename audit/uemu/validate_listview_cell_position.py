@@ -16,6 +16,7 @@ dans `xmm2`, avant que le widget ne la recoive.
 
 Usage : NIE_EXE=dist/nie.exe python3 scripts/audit/uemu/validate_listview_cell_position.py
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -25,11 +26,11 @@ from uemu import Emu, SCRATCH  # noqa: E402
 
 DEBUT = 0x140544DF6
 ARRET = 0x140544E4E
-PORTEUR = SCRATCH + 0x5000      # l'objet dont `[+0x198]` pointe la table
-TABLE = SCRATCH + 0x6000        # les matrices affines, 48 octets chacune
-INDICES = SCRATCH + 0x7000      # la table d'indices de cellules
-BASE = SCRATCH + 0x8000         # la position de base lue par `movups xmm2,[r13]`
-OBJ = SCRATCH + 0x9000          # l'objet teste par `cmp byte [rbx+1D8h],0`
+PORTEUR = SCRATCH + 0x5000  # l'objet dont `[+0x198]` pointe la table
+TABLE = SCRATCH + 0x6000  # les matrices affines, 48 octets chacune
+INDICES = SCRATCH + 0x7000  # la table d'indices de cellules
+BASE = SCRATCH + 0x8000  # la position de base lue par `movups xmm2,[r13]`
+OBJ = SCRATCH + 0x9000  # l'objet teste par `cmp byte [rbx+1D8h],0`
 
 
 def affine(x, y, z):
@@ -46,10 +47,10 @@ def emu(e, cellules, index, base):
     indices = struct.pack(f"<{len(cellules)}i", *range(len(cellules)))
     porteur = bytearray(0x200)
     struct.pack_into("<Q", porteur, 0x198, TABLE)
-    obj = bytearray(0x200)                      # `[rbx+1D8h] == 0` : le chemin qui additionne
+    obj = bytearray(0x200)  # `[rbx+1D8h] == 0` : le chemin qui additionne
     out = e.call(
         DEBUT,
-        rax=index,                              # `movsxd rdx,eax` : le rang dans la table d'indices
+        rax=index,  # `movsxd rdx,eax` : le rang dans la table d'indices
         rcx=INDICES,
         reg_in={"rbx": OBJ, "r13": BASE, "rdi": OBJ},
         mem={
@@ -86,7 +87,9 @@ for cellules, index, base in CAS:
     struct.pack_into("<Q", porteur, 0x198, TABLE)
     table = b"".join(affine(*c) for c in cellules)
     out = e.call(
-        DEBUT, rax=index, rcx=INDICES,
+        DEBUT,
+        rax=index,
+        rcx=INDICES,
         reg_in={"rbx": OBJ, "r13": BASE, "rdi": OBJ},
         mem={
             INDICES: struct.pack(f"<{len(cellules)}i", *range(len(cellules))),
@@ -96,7 +99,8 @@ for cellules, index, base in CAS:
             BASE: struct.pack("<4f", *base, 0.0),
             rsp + 0x50: struct.pack("<Q", PORTEUR),
         },
-        stop=ARRET, read_xmm=[2],
+        stop=ARRET,
+        read_xmm=[2],
     )
     if out["error"]:
         print(f"✗ index={index} : {out['error']}")

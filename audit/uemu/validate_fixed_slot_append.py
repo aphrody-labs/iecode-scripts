@@ -10,6 +10,7 @@ puis count++. param_2=rdx (à +0xa8), param_3=r8 (à +0), param_4=r9 (à +0x38),
 
 Lance depuis scripts/ : uv run scripts/audit/uemu/validate_fixed_slot_append.py
 """
+
 import struct
 import sys
 
@@ -33,8 +34,9 @@ F1_0 = f32_bits(1.0)  # 0x3f800000
 F2_0 = f32_bits(2.0)  # 0x40000000
 
 
-def mirror(prior: bytes, base_nonzero: bool, cap: int, count: int,
-           p2: int, p3: int, p4: int, p5: int):
+def mirror(
+    prior: bytes, base_nonzero: bool, cap: int, count: int, p2: int, p3: int, p4: int, p5: int
+):
     """Reproduit l'effet sur (tableau, count). Renvoie (nouvel_array_bytes, nouveau_count)."""
     arr = bytearray(prior)
     new_count = count
@@ -42,35 +44,35 @@ def mirror(prior: bytes, base_nonzero: bool, cap: int, count: int,
         e = count * ELEM
 
         def w32(off, val):
-            arr[off:off + 4] = struct.pack("<I", val & 0xFFFFFFFF)
+            arr[off : off + 4] = struct.pack("<I", val & 0xFFFFFFFF)
 
         def w16(off, val):
-            arr[off:off + 2] = struct.pack("<H", val & 0xFFFF)
+            arr[off : off + 2] = struct.pack("<H", val & 0xFFFF)
 
         def w8(off, val):
             arr[off] = val & 0xFF
 
         def w64(off, val):
-            arr[off:off + 8] = struct.pack("<Q", val & 0xFFFFFFFFFFFFFFFF)
+            arr[off : off + 8] = struct.pack("<Q", val & 0xFFFFFFFFFFFFFFFF)
 
         # boucle 1 : 3 sous-blocs de 0x38, rax = e+8+s
         for i in range(3):
             s = i * 0x38
             r = e + 8 + s
             w32(r - 4, 0)
-            w64(r, F1_0)            # qword 0x3f800000
-            w64(r + 8, F1_0)        # qword 0x3f800000
-            w32(r + 0x10, F2_0)     # dword 0x40000000
+            w64(r, F1_0)  # qword 0x3f800000
+            w64(r + 8, F1_0)  # qword 0x3f800000
+            w32(r + 0x10, F2_0)  # dword 0x40000000
             w64(r + 0x20, 0)
             w16(r + 0x28, 0)
-            w8(r + 0x2a, 0)
-            w32(r + 0x2c, 0)
+            w8(r + 0x2A, 0)
+            w32(r + 0x2C, 0)
         # après-boucle
-        w32(e + 0xb0, 0)
-        w32(e + 0xb4, F1_0)
-        w32(e + 0xa8, 0)
-        w8(e + 0xac, 1)
-        w32(e + 0xa8, p2)          # écrase le 0
+        w32(e + 0xB0, 0)
+        w32(e + 0xB4, F1_0)
+        w32(e + 0xA8, 0)
+        w8(e + 0xAC, 1)
+        w32(e + 0xA8, p2)  # écrase le 0
         # boucle 2 : params p3,p4,p5 aux offsets 0, 0x38, 0x70
         w32(e + 0x00, p3)
         w32(e + 0x38, p4)
@@ -82,7 +84,7 @@ def mirror(prior: bytes, base_nonzero: bool, cap: int, count: int,
 def build_struct(base_va, cap, count):
     b = bytearray(0x80)
     b[0x60:0x68] = struct.pack("<Q", base_va)
-    b[0x6c:0x70] = struct.pack("<I", cap)
+    b[0x6C:0x70] = struct.pack("<I", cap)
     b[0x70:0x74] = struct.pack("<I", count)
     return bytes(b)
 
@@ -132,7 +134,7 @@ def run():
 
         mem = {
             STRUCT_VA: struct_bytes,
-            ARRAY_VA: prior,             # toujours rempli (la fonction ne lit pas si base=0)
+            ARRAY_VA: prior,  # toujours rempli (la fonction ne lit pas si base=0)
             ARG5_VA: struct.pack("<I", p5),
         }
         out = e.call(
@@ -163,9 +165,11 @@ def run():
             # localiser le 1er octet divergent
             for j in range(ARRAY_SZ):
                 if got_arr[j] != exp_arr[j]:
-                    print(f"case {case}: array diff @+0x{j:x} (elem {j//ELEM} off 0x{j%ELEM:x}) "
-                          f"exp {exp_arr[j]:#04x} got {got_arr[j]:#04x} "
-                          f"[mode={mode} cap={cap} count={count}]")
+                    print(
+                        f"case {case}: array diff @+0x{j:x} (elem {j // ELEM} off 0x{j % ELEM:x}) "
+                        f"exp {exp_arr[j]:#04x} got {got_arr[j]:#04x} "
+                        f"[mode={mode} cap={cap} count={count}]"
+                    )
                     break
         if not ok:
             fails += 1

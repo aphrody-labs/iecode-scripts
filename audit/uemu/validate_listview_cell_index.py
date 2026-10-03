@@ -14,6 +14,7 @@ compte est faux, l'ecriture n'atterrit pas et le cas echoue au lieu de passer.
 
 Usage : NIE_EXE=dist/nie.exe python3 scripts/audit/uemu/validate_listview_cell_index.py
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -25,7 +26,7 @@ from uemu import Emu, SCRATCH  # noqa: E402
 FN = 0x140543760
 THIS = SCRATCH + 0x2000
 VTABLE = SCRATCH + 0x4000
-CELL_CALL_RANK = 5          # verifie plus bas : la cellule vient du 5e `call` stubbe
+CELL_CALL_RANK = 5  # verifie plus bas : la cellule vient du 5e `call` stubbe
 CELL = uemu.STUB_HEAP + 0x1000 * CELL_CALL_RANK
 
 
@@ -33,16 +34,16 @@ def this_object(cells, stride, top, focus):
     o = bytearray(0x200)
     struct.pack_into("<Q", o, 0x000, VTABLE)
     struct.pack_into("<i", o, 0x0C8, stride)
-    struct.pack_into("<i", o, 0x0E8, cells)      # diviseur ET borne de boucle : jamais 0
-    struct.pack_into("<i", o, 0x12C, top)        # la ligne de tete, celle que `step_row` deplace
-    struct.pack_into("<i", o, 0x198, focus)      # `-1` bascule sur la valeur des parametres
-    o[0x1C2] = 1                                  # coupe le second garde
+    struct.pack_into("<i", o, 0x0E8, cells)  # diviseur ET borne de boucle : jamais 0
+    struct.pack_into("<i", o, 0x12C, top)  # la ligne de tete, celle que `step_row` deplace
+    struct.pack_into("<i", o, 0x198, focus)  # `-1` bascule sur la valeur des parametres
+    o[0x1C2] = 1  # coupe le second garde
     return bytes(o)
 
 
 def cell_object(count, index_before=0x7777):
     o = bytearray(0x200)
-    struct.pack_into("<i", o, 0x148, 1)           # non nul : sans quoi le champ n'est pas touche
+    struct.pack_into("<i", o, 0x148, 1)  # non nul : sans quoi le champ n'est pas touche
     struct.pack_into("<h", o, 0x150, count)
     struct.pack_into("<h", o, 0x154, index_before)
     return bytes(o)
@@ -55,7 +56,11 @@ def i16(v):
 
 def emu(e, cells, stride, top, focus, count, row, column):
     out = e.call(
-        FN, rcx=THIS, rdx=row, r8=column, r9=0,
+        FN,
+        rcx=THIS,
+        rdx=row,
+        r8=column,
+        r9=0,
         mem={
             THIS: this_object(cells, stride, top, focus),
             VTABLE: bytes(0x400),
@@ -65,7 +70,11 @@ def emu(e, cells, stride, top, focus, count, row, column):
         stub_calls=True,
     )
     cell = out["mem"][CELL]
-    return i16(struct.unpack_from("<h", cell, 0x154)[0]), i16(struct.unpack_from("<h", cell, 0x156)[0]), cell[0x161]
+    return (
+        i16(struct.unpack_from("<h", cell, 0x154)[0]),
+        i16(struct.unpack_from("<h", cell, 0x156)[0]),
+        cell[0x161],
+    )
 
 
 def mirror(raw, count):
@@ -83,17 +92,17 @@ def mirror(raw, count):
 # sont couverts. Le `count` de la cellule fait ensuite le modulo qui nous interesse.
 # (cells, stride, top, focus, count, row, column)
 CASES = [
-    (4, 10, 0, 0, 8, 0, 0),      # brut 0
-    (4, 10, 1, 2, 8, 0, 0),      # brut 3, count 8 -> 3
-    (4, 10, 1, 2, 2, 0, 0),      # brut 3 >= count 2 -> 0   (LE BOUCLAGE)
-    (8, 10, 3, 4, 8, 0, 0),      # brut 7, count 8 -> 7
-    (8, 10, 3, 4, 4, 0, 0),      # brut 7 >= count 4 -> 0
-    (8, 10, 0, 5, 6, 0, 0),      # brut 5 < count 6 -> 5
-    (4, 10, 0, -1, 8, 0, 3),     # repli parametres : (0*10+3)%4 = 3
-    (4, 10, 0, -1, 2, 0, 3),     # repli + bouclage : 3 >= 2 -> 0
-    (8, 10, 0, -1, 8, 1, 2),     # repli : (1*10+2)%8 = 4
-    (4, 10, 6, 3, 8, 0, 0),      # l'anneau se referme : (6+3)%4 = 1, count 8 -> 1
-    (4, 10, 7, 1, 8, 0, 0),      # (7+1)%4 = 0
+    (4, 10, 0, 0, 8, 0, 0),  # brut 0
+    (4, 10, 1, 2, 8, 0, 0),  # brut 3, count 8 -> 3
+    (4, 10, 1, 2, 2, 0, 0),  # brut 3 >= count 2 -> 0   (LE BOUCLAGE)
+    (8, 10, 3, 4, 8, 0, 0),  # brut 7, count 8 -> 7
+    (8, 10, 3, 4, 4, 0, 0),  # brut 7 >= count 4 -> 0
+    (8, 10, 0, 5, 6, 0, 0),  # brut 5 < count 6 -> 5
+    (4, 10, 0, -1, 8, 0, 3),  # repli parametres : (0*10+3)%4 = 3
+    (4, 10, 0, -1, 2, 0, 3),  # repli + bouclage : 3 >= 2 -> 0
+    (8, 10, 0, -1, 8, 1, 2),  # repli : (1*10+2)%8 = 4
+    (4, 10, 6, 3, 8, 0, 0),  # l'anneau se referme : (6+3)%4 = 1, count 8 -> 1
+    (4, 10, 7, 1, 8, 0, 0),  # (7+1)%4 = 0
 ]
 
 e = Emu()

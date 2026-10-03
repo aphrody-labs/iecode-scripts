@@ -8,6 +8,7 @@ renvoie un **f32** (dans `xmm0` — Ghidra a typé la fonction `void` en perdant
 On lit `xmm0` via uemu et on compare bit-à-bit (valeurs finies → round-trip `struct.pack` exact) +
 l'index avancé. Sort 0 si byte-exact. Miroir = port `aphrody_nie_core::typed_value_reader::read_next_float`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -40,8 +41,13 @@ def build(tags, values, index):
 
 def emu_read(e, tags, values, index):
     param, obj, tagbuf, databuf = build(tags, values, index)
-    out = e.call(0x140051FC0, rcx=PARAM, mem={PARAM: param, OBJ: obj, TAGS: tagbuf, DATA: databuf},
-                 read={PARAM + 8: 4}, read_xmm=[0])
+    out = e.call(
+        0x140051FC0,
+        rcx=PARAM,
+        mem={PARAM: param, OBJ: obj, TAGS: tagbuf, DATA: databuf},
+        read={PARAM + 8: 4},
+        read_xmm=[0],
+    )
     f = out["xmm"][0][0]  # lane 0 de xmm0
     new_idx = struct.unpack("<i", out["mem"][PARAM + 8])[0]
     return struct.pack("<f", f), new_idx
@@ -95,7 +101,11 @@ for _ in range(700):
         if fails <= 10:
             ev = struct.unpack("<f", er[0])[0]
             mv = struct.unpack("<f", mr[0])[0]
-            print(f"  ✗ tags={tags} idx={index} tag={tags[index]} val={values[index].hex()}: "
-                  f"uemu={ev}({er[1]}) ≠ miroir={mv}({mr[1]})")
-print(f"typed value reader FLOAT (FUN_140051fc0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+            print(
+                f"  ✗ tags={tags} idx={index} tag={tags[index]} val={values[index].hex()}: "
+                f"uemu={ev}({er[1]}) ≠ miroir={mv}({mr[1]})"
+            )
+print(
+    f"typed value reader FLOAT (FUN_140051fc0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

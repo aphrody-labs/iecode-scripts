@@ -15,6 +15,7 @@ propre à FUN_1405a0df0) sur tout l'espace (field0, field8), comparé byte-exact
 Layout du chemin positif de FUN_14059f770 :
     r9 = [rcx+0x20] ; rax = [r9] + index*16 ; if rax < [rcx+0x10] return rax
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -25,12 +26,12 @@ from uemu import Emu, SCRATCH
 VA = 0x1405A0DF0
 
 # --- agencement du conteneur factice dans la page scratch ---
-CONT = SCRATCH + 0x1000   # objet conteneur (rcx)
+CONT = SCRATCH + 0x1000  # objet conteneur (rcx)
 HOLDER = SCRATCH + 0x2000  # [rcx+0x20] -> HOLDER ; [HOLDER] = BASE
-BASE = SCRATCH + 0x3000   # base du tableau d'éléments
+BASE = SCRATCH + 0x3000  # base du tableau d'éléments
 BOUND = SCRATCH + 0x80000  # [rcx+0x10] : borne supérieure (doit dépasser p)
-INDEX = 1                 # index positif -> p = BASE + INDEX*16
-P = BASE + INDEX * 16     # pointeur d'élément renvoyé par l'accesseur
+INDEX = 1  # index positif -> p = BASE + INDEX*16
+P = BASE + INDEX * 16  # pointeur d'élément renvoyé par l'accesseur
 
 
 def u32le(v):
@@ -80,8 +81,8 @@ def main():
     g = lcg(0xDEADBEEF1234)
     for _ in range(500):
         r = next(g)
-        field0 = (r & 0xFFFFFFFF)
-        field8 = ((r >> 32) & 0xFFFFFFFF)
+        field0 = r & 0xFFFFFFFF
+        field8 = (r >> 32) & 0xFFFFFFFF
         # biaiser souvent field8 vers 0/1 pour couvrir les branches fines
         if (r >> 60) & 1:
             field8 = (r >> 32) & 1
@@ -94,7 +95,9 @@ def main():
         if got != exp:
             ndiv += 1
             if ndiv <= 20:
-                print(f"DIVERGE cas#{i} field0={field0:#x} field8={field8:#x} : model={exp} uemu={got}")
+                print(
+                    f"DIVERGE cas#{i} field0={field0:#x} field8={field8:#x} : model={exp} uemu={got}"
+                )
     if ndiv:
         print(f"ÉCHEC : {ndiv}/{len(cases)} divergences")
         sys.exit(1)

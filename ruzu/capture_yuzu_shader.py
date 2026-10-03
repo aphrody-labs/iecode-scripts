@@ -62,8 +62,7 @@ def _dump_pipeline_key(process, key_address, hashes):
         "color_formats=" + " ".join(f"0x{value:02X}" for value in color_formats),
         f"alpha_test_ref=0x{alpha_test_ref:08X}",
         f"point_size=0x{point_size:08X}",
-        "viewport_swizzles="
-        + " ".join(f"0x{value:04X}" for value in viewport_swizzles),
+        "viewport_swizzles=" + " ".join(f"0x{value:04X}" for value in viewport_swizzles),
         f"attribute_types_or_enabled_divisors=0x{attribute_types:016X}",
     ]
     if state_size >= _DYNAMIC_STATE_OFFSET + 8:
@@ -76,9 +75,7 @@ def _dump_pipeline_key(process, key_address, hashes):
         )
     if state_size >= _ATTRIBUTES_OFFSET:
         attachments = struct.unpack_from("<8I", state, 72)
-        lines.append(
-            "attachments=" + " ".join(f"0x{value:08X}" for value in attachments)
-        )
+        lines.append("attachments=" + " ".join(f"0x{value:08X}" for value in attachments))
     (_state["output"] / "fixed_state.txt").write_text("\n".join(lines) + "\n")
     print(f"[yuzu-capture] wrote pipeline key: {len(key)} bytes")
 
@@ -122,7 +119,7 @@ def _dump_ir(frame, program_address, stage):
     options.SetTimeoutInMicroSeconds(30_000_000)
     expression = (
         f"((void(*)(const void*, const char*))0x{dump_address:x})"
-        f"((const void*)0x{program_address:x}, \"{escaped_path}\")"
+        f'((const void*)0x{program_address:x}, "{escaped_path}")'
     )
     value = frame.EvaluateExpression(expression, options)
     if value.GetError().Fail() and not pathlib.Path(output_path).is_file():
@@ -140,10 +137,7 @@ def _on_pipeline(frame, _location, _dict):
     if hashes[1] != _state["vertex_hash"] or hashes[5] != _state["fragment_hash"]:
         return False
 
-    print(
-        "[yuzu-capture] matched pipeline "
-        f"VB=0x{hashes[1]:016X} FS=0x{hashes[5]:016X}"
-    )
+    print(f"[yuzu-capture] matched pipeline VB=0x{hashes[1]:016X} FS=0x{hashes[5]:016X}")
     try:
         _dump_pipeline_key(process, key_address, hashes)
     except RuntimeError as error:
@@ -190,9 +184,7 @@ def _on_emit_return(frame, location, _dict):
     try:
         begin, end = struct.unpack("<QQ", _read(process, vector_address, 16))
         if end < begin or (end - begin) % 4 != 0:
-            raise RuntimeError(
-                f"invalid SPIR-V vector [0x{begin:x}, 0x{end:x})"
-            )
+            raise RuntimeError(f"invalid SPIR-V vector [0x{begin:x}, 0x{end:x})")
         spirv = _read(process, begin, end - begin)
         (_state["output"] / f"{stage}.spv").write_bytes(spirv)
         print(f"[yuzu-capture] wrote {stage}: {len(spirv) // 4} SPIR-V words")
@@ -211,16 +203,12 @@ def capture_yuzu_shader(debugger, command, result, _dict):
     """capture-yuzu-shader OUTPUT_DIR VERTEX_HASH FRAGMENT_HASH"""
     arguments = shlex.split(command)
     if len(arguments) != 3:
-        result.SetError(
-            "usage: capture-yuzu-shader OUTPUT_DIR VERTEX_HASH FRAGMENT_HASH"
-        )
+        result.SetError("usage: capture-yuzu-shader OUTPUT_DIR VERTEX_HASH FRAGMENT_HASH")
         return
     output = pathlib.Path(arguments[0]).expanduser().resolve()
     output.mkdir(parents=True, exist_ok=True)
     target = debugger.GetSelectedTarget()
-    breakpoint = target.BreakpointCreateByName(
-        "Vulkan::PipelineCache::CreateGraphicsPipeline"
-    )
+    breakpoint = target.BreakpointCreateByName("Vulkan::PipelineCache::CreateGraphicsPipeline")
     breakpoint.SetScriptCallbackFunction("capture_yuzu_shader._on_pipeline")
     _state.clear()
     _state.update(
@@ -238,6 +226,5 @@ def capture_yuzu_shader(debugger, command, result, _dict):
 
 def __lldb_init_module(debugger, _dict):
     debugger.HandleCommand(
-        "command script add -f capture_yuzu_shader.capture_yuzu_shader "
-        "capture-yuzu-shader"
+        "command script add -f capture_yuzu_shader.capture_yuzu_shader capture-yuzu-shader"
     )

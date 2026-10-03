@@ -77,12 +77,16 @@ def find_fastmem_arena(pid: int) -> int:
         sys.exit("error: no candidate fastmem arena found in /proc/PID/maps")
     candidates.sort(reverse=True)
     base = candidates[0][1]
-    print(f"[hw_watch] detected fastmem arena base: 0x{base:016x} (size {candidates[0][0] >> 30} GB)")
+    print(
+        f"[hw_watch] detected fastmem arena base: 0x{base:016x} (size {candidates[0][0] >> 30} GB)"
+    )
     return base
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("pid", type=int, help="ruzu-cmd PID")
     parser.add_argument(
         "--vaddr",
@@ -149,11 +153,11 @@ def main() -> int:
         ]
     cmd_lines += [
         f"commands 1",
-        f"  printf \"\\n[HW_WATCH HIT] write to 0x{target:016x}\\n\"",
-        f"  printf \"  guest vaddr was 0x{args.vaddr:016x}\\n\"",
+        f'  printf "\\n[HW_WATCH HIT] write to 0x{target:016x}\\n"',
+        f'  printf "  guest vaddr was 0x{args.vaddr:016x}\\n"',
         f"  bt 30",
         f"  info registers rax rbx rcx rdx rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 rip rsp rbp",
-        f"  printf \"\\n--- continuing ---\\n\"",
+        f'  printf "\\n--- continuing ---\\n"',
         f"  continue",
         f"end",
         f"continue",

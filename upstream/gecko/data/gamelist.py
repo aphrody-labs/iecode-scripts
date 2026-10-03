@@ -2,7 +2,16 @@ from pathlib import Path
 
 ROMS_PATH = Path("\\\\VIBRATOR\\Roms\\Nintendo - GameCube")
 BLACKLIST = [
-    "Alpha", "Beta", "Proto", "Rev ", "Action Replay", "(v1.", "(Unl)", "Disc 2", "Disc 3", "Demo"
+    "Alpha",
+    "Beta",
+    "Proto",
+    "Rev ",
+    "Action Replay",
+    "(v1.",
+    "(Unl)",
+    "Disc 2",
+    "Disc 3",
+    "Demo",
 ]
 
 screenshots = []

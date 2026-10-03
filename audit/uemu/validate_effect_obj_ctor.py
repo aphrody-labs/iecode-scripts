@@ -9,11 +9,13 @@ On compare BYTE-EXACT le buffer 0xd0 muté ET le compteur, avec un buffer d'entr
 fuzzé (LCG) pour PROUVER l'ensemble exact des octets écrits vs préservés
 (0x7a,0x7b,0xae,0xaf,0xce,0xcf jamais touchés).
 """
+
 import struct
 import sys
 
 import sys as _sys
 from pathlib import Path as _Path
+
 _sys.path.insert(0, str(_Path(__file__).resolve().parent))
 from uemu import Emu, SCRATCH
 
@@ -123,11 +125,18 @@ def main():
     print(f"BYTE-EXACT — {ncases} cas (struct 0xd0 + compteur + voisins) identiques au bit près.")
     # échantillon golden pour les tests Rust
     buf0 = bytes(N)
-    out = e.call(VADDR, rcx=SCRATCH, mem={SCRATCH: buf0, COUNTER_SLOT: bytes(16)},
-                 read={SCRATCH: N, COUNTER_SLOT: 16})
+    out = e.call(
+        VADDR,
+        rcx=SCRATCH,
+        mem={SCRATCH: buf0, COUNTER_SLOT: bytes(16)},
+        read={SCRATCH: N, COUNTER_SLOT: 16},
+    )
     blob = bytes(out["mem"][SCRATCH])
-    nz = [(o, struct.unpack_from("<I", blob, o)[0]) for o in range(0, N, 4)
-          if struct.unpack_from("<I", blob, o)[0]]
+    nz = [
+        (o, struct.unpack_from("<I", blob, o)[0])
+        for o in range(0, N, 4)
+        if struct.unpack_from("<I", blob, o)[0]
+    ]
     print("golden (entrée nulle) mots non nuls:")
     for o, w in nz:
         print(f"   +0x{o:03x}: {w:#010x}")

@@ -58,8 +58,11 @@ RUZU_MISSING_KEYS_DETAIL = "Encryption keys are missing. <br>Please follow <a hr
 def read_catalog(path: Path, rust_text: str, context: str | None = None) -> OrderedDict[str, str]:
     messages: OrderedDict[str, str] = OrderedDict()
     root = ET.parse(path).getroot()
-    contexts = [item for item in root.findall("context")
-                if context is None or item.findtext("name") == context]
+    contexts = [
+        item
+        for item in root.findall("context")
+        if context is None or item.findtext("name") == context
+    ]
     for message in (message for item in contexts for message in item.findall("message")):
         source = message.findtext("source")
         translation = message.find("translation")
@@ -73,8 +76,10 @@ def read_catalog(path: Path, rust_text: str, context: str | None = None) -> Orde
             translated = translated.replace("Eden", "Ruzu")
         if source == UPSTREAM_MISSING_KEYS_DETAIL and RUZU_MISSING_KEYS_DETAIL in rust_text:
             messages[RUZU_MISSING_KEYS_DETAIL] = (
-                translated
-                .replace("https://yuzu-emu.org/help/quickstart/", "https://yuzu-mirror.github.io/help/quickstart/")
+                translated.replace(
+                    "https://yuzu-emu.org/help/quickstart/",
+                    "https://yuzu-mirror.github.io/help/quickstart/",
+                )
                 .replace("yuzu", "ruzu")
                 .replace("Yuzu", "Ruzu")
             )
@@ -99,8 +104,7 @@ def write_tables(path: Path, catalogs: Path, rust_source: Path, context: str | N
     rust_text = "\n".join(
         source.read_text(encoding="utf-8", errors="ignore")
         for source in rust_source.rglob("*.rs")
-        if source.resolve() != path.resolve()
-        and not source.name.startswith("i18n_")
+        if source.resolve() != path.resolve() and not source.name.startswith("i18n_")
     )
     tables = {
         catalog.stem: read_catalog(catalog, rust_text, context)

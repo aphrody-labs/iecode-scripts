@@ -15,6 +15,7 @@ origin@[[r8]+0x1410]. Sortie → [rdx].
 VALIDATION : émule la fonction RÉELLE (FMA émulée) avec des floats connus et compare position/t au
 calcul f32 de la formule reversée (ordre des ops, FMA via math.fma→f32) — BYTE-EXACT.
 """
+
 import math
 import struct
 import sys
@@ -32,8 +33,8 @@ def f32(x):
     return struct.unpack("<f", struct.pack("<f", x))[0]
 
 
-target = (10.0, 20.0, 30.0, 0.0)   # [rcx+0x60]
-origin = (1.0, 2.0, 3.0, 0.0)      # [[r8]+0x1410]
+target = (10.0, 20.0, 30.0, 0.0)  # [rcx+0x60]
+origin = (1.0, 2.0, 3.0, 0.0)  # [[r8]+0x1410]
 t0, dur, dt = 0.0, 2.0, 0.5
 
 obj = bytearray(0x100)
@@ -47,9 +48,14 @@ eo = bytearray(0x1420)
 struct.pack_into("<4f", eo, 0x1410, *origin)
 
 e = Emu()
-out = e.call(VADDR, rcx=OBJ, rdx=OUT, r8=IN,
-             mem={OBJ: bytes(obj), IN: bytes(inp), ENDOBJ: bytes(eo), OUT: bytes(16)},
-             read={OUT: 16, OBJ + 0xA0: 4})
+out = e.call(
+    VADDR,
+    rcx=OBJ,
+    rdx=OUT,
+    r8=IN,
+    mem={OBJ: bytes(obj), IN: bytes(inp), ENDOBJ: bytes(eo), OUT: bytes(16)},
+    read={OUT: 16, OBJ + 0xA0: 4},
+)
 got_pos = struct.unpack("<4f", out["mem"][OUT])
 got_t = struct.unpack("<f", out["mem"][OBJ + 0xA0])[0]
 
@@ -76,6 +82,8 @@ if errs:
         print("  -", x)
     sys.exit(1)
 
-print("✓ VALIDÉ byte-exact : BallMoveLerp::vmethod_3 (0x141339ba0) — physique (SSE+FMA) == binaire réel.")
+print(
+    "✓ VALIDÉ byte-exact : BallMoveLerp::vmethod_3 (0x141339ba0) — physique (SSE+FMA) == binaire réel."
+)
 print(f"  ease = {ease} (quartic ease-out)   |   pos = {got_pos[:3]}   |   t = {got_t}")
 print("→ 2e physique de gameplay (avec FMA3 émulée) REVERSÉE + VALIDÉE contre l'oracle.")

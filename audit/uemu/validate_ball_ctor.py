@@ -14,6 +14,7 @@ VALIDATION : on émule la fonction réelle via uemu et on assert que le struct c
 EXACTEMENT à ce spec reversé. Si OK → la reversal est fidèle, prouvée contre le vrai binaire, sans
 inventer. C'est la boucle reverse→valider que l'oracle débloque.
 """
+
 import struct
 import sys
 
@@ -62,7 +63,14 @@ if out["error"]:
 # Spec reversé : [0x1d8]=3, [0x1e0]=0xc11ccccd (-9.8f). Distinct de aphrody-nie-core BALL_GRAVITY=2.0
 # (best-effort aphrody-nie-runtime) — la gravité MONDE réelle du jeu est -9.8f (à confirmer = celle utilisée
 # par l'intégration ballon avant de remplacer 2.0, cf. boucle physique du tick à localiser).
-g = e.call(0x14027AD90, rcx=SCRATCH, stub_calls=True, stop=0x14027ADED, mem={SCRATCH: bytes(0x210)}, read={SCRATCH: 0x210})
+g = e.call(
+    0x14027AD90,
+    rcx=SCRATCH,
+    stub_calls=True,
+    stop=0x14027ADED,
+    mem={SCRATCH: bytes(0x210)},
+    read={SCRATCH: 0x210},
+)
 grav = struct.unpack_from("<I", g["mem"][SCRATCH], 0x1E0)[0]
 flag = struct.unpack_from("<I", g["mem"][SCRATCH], 0x1D8)[0]
 if grav != 0xC11CCCCD:
@@ -77,7 +85,13 @@ if errs:
     sys.exit(1)
 
 print("✓ VALIDÉ byte-exact contre l'oracle (reversal == binaire réel, sans inventer) :")
-print(f"  [1] init objet ballon (0x14027ac00) : vtable@0={vptr:#x}, scale 1.0f@0x54, count 1@0x5c, reste 0")
-print(f"  [2] init contexte physique (0x14027ad90) : [0x1d8]={flag}, gravité @0x1e0 = {grav:#010x} = "
-      f"{struct.unpack('<f', struct.pack('<I', grav))[0]:.1f}f (gravité MONDE réelle, vs 2.0 best-effort)")
-print("→ 2 fonctions de gameplay reversées + VALIDÉES contre l'oracle uemu (boucle reverse→valider).")
+print(
+    f"  [1] init objet ballon (0x14027ac00) : vtable@0={vptr:#x}, scale 1.0f@0x54, count 1@0x5c, reste 0"
+)
+print(
+    f"  [2] init contexte physique (0x14027ad90) : [0x1d8]={flag}, gravité @0x1e0 = {grav:#010x} = "
+    f"{struct.unpack('<f', struct.pack('<I', grav))[0]:.1f}f (gravité MONDE réelle, vs 2.0 best-effort)"
+)
+print(
+    "→ 2 fonctions de gameplay reversées + VALIDÉES contre l'oracle uemu (boucle reverse→valider)."
+)

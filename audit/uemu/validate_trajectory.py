@@ -10,6 +10,7 @@ une formule isolée.
 
 Émet aussi les vecteurs golden (bits f32) consommés par le test Rust `trajectory_*` de aphrody-nie-core.
 """
+
 import math
 import struct
 import sys
@@ -38,6 +39,7 @@ e = Emu()
 errs = []
 golden = {}
 
+
 # ─── Parabola : p0 réinjecté, vel@0x180 + t@0x190 mutés ──────────────────────────
 def parabola():
     accel = (0.0, -9.8, 0.0, 0.0)
@@ -54,15 +56,25 @@ def parabola():
         inp = bytearray(0x40)
         struct.pack_into("<4f", inp, 0x10, pos[0], pos[1], pos[2], 0.0)
         struct.pack_into("<f", inp, 0x38, dt)
-        out = e.call(0x141334600, rcx=OBJ, rdx=OUT, r8=IN,
-                     mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)},
-                     read={OUT: 16, OBJ + 0x180: 16, OBJ + 0x190: 4})
+        out = e.call(
+            0x141334600,
+            rcx=OBJ,
+            rdx=OUT,
+            r8=IN,
+            mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)},
+            read={OUT: 16, OBJ + 0x180: 16, OBJ + 0x190: 4},
+        )
         if out["error"]:
-            errs.append(f"parabola émul: {out['error']}"); return
+            errs.append(f"parabola émul: {out['error']}")
+            return
         np = list(v3(out["mem"][OUT]))
         # formule reversée (ordre SSE) sur l'état courant
-        fp = [f32(f32(f32(f32(0.5 * accel[i]) * dt) * dt) + f32(f32(dt * vel[i]) + pos[i])) for i in range(3)]
-        traj_bin.append(np); traj_formula.append(fp)
+        fp = [
+            f32(f32(f32(f32(0.5 * accel[i]) * dt) * dt) + f32(f32(dt * vel[i]) + pos[i]))
+            for i in range(3)
+        ]
+        traj_bin.append(np)
+        traj_formula.append(fp)
         # réinjection de l'état muté
         vel = list(struct.unpack("<4f", out["mem"][OBJ + 0x180]))
         t = struct.unpack("<f", out["mem"][OBJ + 0x190])[0]
@@ -90,11 +102,17 @@ def lerp():
         struct.pack_into("<f", inp, 0x38, dt)
         eo = bytearray(0x1420)
         struct.pack_into("<4f", eo, 0x1410, origin[0], origin[1], origin[2], 0.0)
-        out = e.call(0x141339BA0, rcx=OBJ, rdx=OUT, r8=IN,
-                     mem={OBJ: bytes(obj), IN: bytes(inp), ENDOBJ: bytes(eo), OUT: bytes(16)},
-                     read={OUT: 16, OBJ + 0xA0: 4})
+        out = e.call(
+            0x141339BA0,
+            rcx=OBJ,
+            rdx=OUT,
+            r8=IN,
+            mem={OBJ: bytes(obj), IN: bytes(inp), ENDOBJ: bytes(eo), OUT: bytes(16)},
+            read={OUT: 16, OBJ + 0xA0: 4},
+        )
         if out["error"]:
-            errs.append(f"lerp émul: {out['error']}"); return
+            errs.append(f"lerp émul: {out['error']}")
+            return
         np = list(v3(out["mem"][OUT]))
         tn = f32(t + dt)
         s = f32(tn / dur)
@@ -106,7 +124,8 @@ def lerp():
         complete = tn >= dur or ease >= 1.0
         y = bound if (complete or lerped[1] < bound) else lerped[1]
         fp = [lerped[0], y, lerped[2]]
-        traj_bin.append(np); traj_formula.append(fp)
+        traj_bin.append(np)
+        traj_formula.append(fp)
         t = struct.unpack("<f", out["mem"][OBJ + 0xA0])[0]
     for f, (b, fo) in enumerate(zip(traj_bin, traj_formula)):
         for i in range(3):
@@ -133,18 +152,26 @@ def targetfollow():
         inp = bytearray(0x40)
         struct.pack_into("<4f", inp, 0x10, pos[0], pos[1], pos[2], 0.0)
         struct.pack_into("<f", inp, 0x38, dt)
-        out = e.call(0x14133C080, rcx=OBJ, rdx=OUT, r8=IN,
-                     mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)},
-                     read={OUT: 16, OBJ + 0xB4: 4}, stub_calls=True)
+        out = e.call(
+            0x14133C080,
+            rcx=OBJ,
+            rdx=OUT,
+            r8=IN,
+            mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)},
+            read={OUT: 16, OBJ + 0xB4: 4},
+            stub_calls=True,
+        )
         if out["error"]:
-            errs.append(f"targetfollow émul: {out['error']}"); return
+            errs.append(f"targetfollow émul: {out['error']}")
+            return
         np = list(v3(out["mem"][OUT]))
         tn = f32(t + dt)
         ty = max(target[1], bound)
         ease = f32(min(max(f32(tn / dur), 0.0), 1.0)) if dur > 0 else 1.0
         tgt = (target[0], ty, target[2])
         fp = [f32(pos[i] + f32(math.fma(f32(tgt[i] - pos[i]), ease, 0.0))) for i in range(3)]
-        traj_bin.append(np); traj_formula.append(fp)
+        traj_bin.append(np)
+        traj_formula.append(fp)
         t = struct.unpack("<f", out["mem"][OBJ + 0xB4])[0]
         pos = np
     for f, (b, fo) in enumerate(zip(traj_bin, traj_formula)):

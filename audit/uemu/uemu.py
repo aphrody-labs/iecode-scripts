@@ -18,6 +18,7 @@ fonctions SSE (ex. BallMoveSimpleParabora ✓) ; les fonctions FMA restent rever
 non validables ici) jusqu'à une émulation FMA logicielle (hook UC_HOOK_INSN_INVALID + calcul f32-FMA)
 ou un support unicorn. NE PAS porter une fonction FMA sans validation (règle no-faux-FAIT).
 """
+
 import struct
 
 import capstone
@@ -49,6 +50,7 @@ from unicorn.x86_const import (
     UC_X86_REG_XMM2,
     UC_X86_REG_XMM3,
 )
+
 
 def _resoudre_exe() -> str:
     """Binaire cible de l'émulation.
@@ -139,7 +141,17 @@ class Emu:
         xmm = {f"xmm{i}": getattr(_xc, f"UC_X86_REG_XMM{i}") for i in range(16)}
         gpr = {
             n: getattr(_xc, f"UC_X86_REG_{n.upper()}")
-            for n in ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", *(f"r{i}" for i in range(8, 16)))
+            for n in (
+                "rax",
+                "rbx",
+                "rcx",
+                "rdx",
+                "rsi",
+                "rdi",
+                "rbp",
+                "rsp",
+                *(f"r{i}" for i in range(8, 16)),
+            )
         }
 
         def f32(x):
@@ -147,11 +159,19 @@ class Emu:
 
         def read_op(u, ins, op):
             if op.type == _x86.X86_OP_REG:
-                return list(struct.unpack("<4f", u.reg_read(xmm[self._md.reg_name(op.reg)]).to_bytes(16, "little")))
+                return list(
+                    struct.unpack(
+                        "<4f", u.reg_read(xmm[self._md.reg_name(op.reg)]).to_bytes(16, "little")
+                    )
+                )
             if op.type == _x86.X86_OP_MEM:
                 m = op.mem
                 bn = self._md.reg_name(m.base) if m.base else None
-                addr = ins.address + ins.size + m.disp if bn == "rip" else (u.reg_read(gpr[bn]) if bn else 0) + m.disp
+                addr = (
+                    ins.address + ins.size + m.disp
+                    if bn == "rip"
+                    else (u.reg_read(gpr[bn]) if bn else 0) + m.disp
+                )
                 if m.index and bn != "rip":
                     addr += u.reg_read(gpr[self._md.reg_name(m.index)]) * m.scale
                 return list(struct.unpack("<4f", bytes(u.mem_read(addr & 0xFFFFFFFFFFFFFFFF, 16))))
@@ -173,7 +193,9 @@ class Emu:
                 if s2 is None or s3 is None:
                     return False
                 for i in range(n):
-                    a, b, c = ({"132": (d[i], s3[i], s2[i]), "213": (s2[i], d[i], s3[i])}.get(variant, (s2[i], s3[i], d[i])))
+                    a, b, c = {"132": (d[i], s3[i], s2[i]), "213": (s2[i], d[i], s3[i])}.get(
+                        variant, (s2[i], s3[i], d[i])
+                    )
                     d[i] = f32(math.fma(a, b, c))
             elif m == "haddps":
                 s = read_op(u, ins, ops[1])
@@ -209,12 +231,29 @@ class Emu:
         self.uc = uc
         self.SCRATCH = SCRATCH
 
-    def call(self, vaddr, rcx=0, rdx=0, r8=0, r9=0, rax=0, xmm=(0.0, 0.0, 0.0, 0.0), mem=None, read=None, stop=None, stub_calls=False, xmm_in=None, read_xmm=None, reg_in=None):
+    def call(
+        self,
+        vaddr,
+        rcx=0,
+        rdx=0,
+        r8=0,
+        r9=0,
+        rax=0,
+        xmm=(0.0, 0.0, 0.0, 0.0),
+        mem=None,
+        read=None,
+        stop=None,
+        stub_calls=False,
+        xmm_in=None,
+        read_xmm=None,
+        reg_in=None,
+    ):
         """Émule de `vaddr` à `stop` (ou fin .pdata). `xmm`=xmm0-3 (tuple de scalaires, legacy) ;
         `xmm_in`={idx: (x,y,z,w)} injecte n'importe quel XMM0-15 (pour émuler de la math SSE inlinée) ;
         `read_xmm`=[idx,…] lit ces XMM à l'arrêt → out["xmm"][idx] = (x,y,z,w). Permet de valider
         byte-exact une séquence SSE en plein milieu d'une fonction (entrées en registres)."""
         import unicorn.x86_const as _xc
+
         uc = self.uc
         self._stub = stub_calls
         self._heap = STUB_HEAP
@@ -236,7 +275,10 @@ class Emu:
             uc.reg_write(reg, val & 0xFFFFFFFFFFFFFFFF)
         for i, f in enumerate(xmm):
             data = struct.pack("<f", f) + b"\x00" * 12
-            uc.reg_write((UC_X86_REG_XMM0, UC_X86_REG_XMM1, UC_X86_REG_XMM2, UC_X86_REG_XMM3)[i], int.from_bytes(data, "little"))
+            uc.reg_write(
+                (UC_X86_REG_XMM0, UC_X86_REG_XMM1, UC_X86_REG_XMM2, UC_X86_REG_XMM3)[i],
+                int.from_bytes(data, "little"),
+            )
         for idx, vec in (xmm_in or {}).items():
             uc.reg_write(xmm_regs[idx], int.from_bytes(struct.pack("<4f", *vec), "little"))
         # `reg_in` pose N'IMPORTE QUEL GPR, ce que les quatre registres d'arguments ne permettent
@@ -255,15 +297,32 @@ class Emu:
         # fonction (`stop=`) lit son resultat dans le registre que le code utilisait a cet
         # instant, et ce n'est presque jamais `rax`. Ajout purement additif : `out["rax"]`
         # continue de repondre comme avant.
-        out = {"rax": uc.reg_read(UC_X86_REG_RAX), "error": err, "mem": {}, "xmm": {}, "reg": {},
-               "rsp_in": rsp}
-        for _nom in ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp",
-                     *(f"r{_i}" for _i in range(8, 16))):
+        out = {
+            "rax": uc.reg_read(UC_X86_REG_RAX),
+            "error": err,
+            "mem": {},
+            "xmm": {},
+            "reg": {},
+            "rsp_in": rsp,
+        }
+        for _nom in (
+            "rax",
+            "rbx",
+            "rcx",
+            "rdx",
+            "rsi",
+            "rdi",
+            "rbp",
+            "rsp",
+            *(f"r{_i}" for _i in range(8, 16)),
+        ):
             out["reg"][_nom] = uc.reg_read(getattr(_xc, f"UC_X86_REG_{_nom.upper()}"))
         for addr, n in (read or {}).items():
             out["mem"][addr] = uc.mem_read(addr, n)
         for idx in read_xmm or []:
-            out["xmm"][idx] = struct.unpack("<4f", uc.reg_read(xmm_regs[idx]).to_bytes(16, "little"))
+            out["xmm"][idx] = struct.unpack(
+                "<4f", uc.reg_read(xmm_regs[idx]).to_bytes(16, "little")
+            )
         return out
 
 
@@ -273,12 +332,18 @@ if __name__ == "__main__":
     # Démo/oracle : l'INIT de struct du ctor ballon. Le ctor (.pdata 0x14027ab50) ALLOUE puis init ;
     # on émule la partie init (à partir de 0x14027ac00, après l'alloc) avec rax=ptr struct, jusqu'à
     # la fin .pdata. Capture le layout réel écrit par le jeu = ground-truth byte-exact.
-    out = e.call(0x14027AC00, rax=SCRATCH, mem={SCRATCH: bytes(n)}, read={SCRATCH: n}, stop=0x14027ACA1)
+    out = e.call(
+        0x14027AC00, rax=SCRATCH, mem={SCRATCH: bytes(n)}, read={SCRATCH: n}, stop=0x14027ACA1
+    )
     blob = out["mem"][SCRATCH]
     nz = [off for off in range(0, n, 4) if struct.unpack_from("<I", blob, off)[0]]
-    print(f"oracle uemu : ctor-init ballon émulé (err={out['error']}) — {len(nz)} mots non nuls / {n // 4}")
+    print(
+        f"oracle uemu : ctor-init ballon émulé (err={out['error']}) — {len(nz)} mots non nuls / {n // 4}"
+    )
     for off in nz:
         word = struct.unpack_from("<I", blob, off)[0]
         f = struct.unpack_from("<f", blob, off)[0]
         print(f"  +0x{off:03x}: {word:#010x}  (f32={f:g})")
-    print("→ harness OK : émule une fonction isolée de l'exe → sortie déterministe (oracle de validation).")
+    print(
+        "→ harness OK : émule une fonction isolée de l'exe → sortie déterministe (oracle de validation)."
+    )

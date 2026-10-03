@@ -13,15 +13,16 @@ Layout d'un enregistrement (8 octets) : [key:u8 @ +0][pad 3][value:u32 @ +4].
 Sémantique = recherche linéaire keyed (clé = octet de tête), première occurrence gagne,
 0 si absent. rax = param_2 (le pointeur de sortie est renvoyé).
 """
+
 import struct
 import sys
 
 from uemu import Emu, SCRATCH
 
 VA = 0x140D8F2B0
-STRUCT = SCRATCH                # base de la struct
-ARRAY = SCRATCH + 0x1000        # tableau d'enregistrements
-OUT = SCRATCH + 0x9000          # u32 de sortie
+STRUCT = SCRATCH  # base de la struct
+ARRAY = SCRATCH + 0x1000  # tableau d'enregistrements
+OUT = SCRATCH + 0x9000  # u32 de sortie
 
 
 def mirror(count, records, key):
@@ -33,7 +34,7 @@ def mirror(count, records, key):
     key &= 0xFF
     i = 0
     while True:
-        ii = i if i < 0x8000_0000 else i - 0x1_0000_0000   # (int)uVar3
+        ii = i if i < 0x8000_0000 else i - 0x1_0000_0000  # (int)uVar3
         cc = count if count < 0x8000_0000 else count - 0x1_0000_0000  # (int)uVar2
         if ii >= 0 and ii < cc:
             rk = records[i][0] & 0xFF
@@ -48,14 +49,14 @@ def mirror(count, records, key):
 def build_mem(count, records):
     """Construit la struct + le tableau en mémoire uemu."""
     arr = bytearray()
-    for (k, pad, val) in records:
+    for k, pad, val in records:
         rec = bytes([k & 0xFF]) + pad[:3] + struct.pack("<I", val & 0xFFFFFFFF)
         assert len(rec) == 8
         arr += rec
     st = bytearray(0x100)
     struct.pack_into("<q", st, 0x88, ARRAY)
     struct.pack_into("<I", st, 0x90, count & 0xFFFFFFFF)
-    return {STRUCT: bytes(st), ARRAY: bytes(arr), OUT: b"\xAA\xAA\xAA\xAA"}
+    return {STRUCT: bytes(st), ARRAY: bytes(arr), OUT: b"\xaa\xaa\xaa\xaa"}
 
 
 class LCG:
@@ -88,8 +89,8 @@ def main():
         exp = mirror(count, records, key)
         rax = out["rax"]
         if got != exp:
-            print(f"FAIL[{label}] count={count} key={key&0xFF:#x} got=*out={got:#x} exp={exp:#x}")
-            print(f"  records={[(r[0],r[2]) for r in records]}")
+            print(f"FAIL[{label}] count={count} key={key & 0xFF:#x} got=*out={got:#x} exp={exp:#x}")
+            print(f"  records={[(r[0], r[2]) for r in records]}")
             return False
         if rax != OUT:
             print(f"FAIL[{label}] rax={rax:#x} expected param_2={OUT:#x}")
@@ -98,19 +99,29 @@ def main():
         return True
 
     # --- Cas dirigés (bords) ---
-    run_case(0, [], 0x41, "count0")                               # vide → 0
+    run_case(0, [], 0x41, "count0")  # vide → 0
     run_case(1, [(0x41, b"\x00\x00\x00", 0xDEADBEEF)], 0x41, "hit1")
     run_case(1, [(0x41, b"\x00\x00\x00", 0xDEADBEEF)], 0x42, "miss1")
     # première occurrence gagne
-    run_case(3, [(7, b"\x01\x02\x03", 0x11111111),
-                 (7, b"\x04\x05\x06", 0x22222222),
-                 (9, b"\x07\x08\x09", 0x33333333)], 7, "first-wins")
+    run_case(
+        3,
+        [
+            (7, b"\x01\x02\x03", 0x11111111),
+            (7, b"\x04\x05\x06", 0x22222222),
+            (9, b"\x07\x08\x09", 0x33333333),
+        ],
+        7,
+        "first-wins",
+    )
     # clé = 0 doit matcher un octet de tête nul
-    run_case(2, [(0, b"\xFF\xFF\xFF", 0x0BADF00D),
-                 (1, b"\x00\x00\x00", 0xCAFEBABE)], 0, "key0")
+    run_case(2, [(0, b"\xff\xff\xff", 0x0BADF00D), (1, b"\x00\x00\x00", 0xCAFEBABE)], 0, "key0")
     # seuls les 8 bits de poids faible de r8 comptent (movzx ebx, r8b)
-    run_case(2, [(0x80, b"\x00\x00\x00", 0x12345678),
-                 (0x81, b"\x00\x00\x00", 0x9ABCDEF0)], 0xFFFFFF00 | 0x80, "highbits")
+    run_case(
+        2,
+        [(0x80, b"\x00\x00\x00", 0x12345678), (0x81, b"\x00\x00\x00", 0x9ABCDEF0)],
+        0xFFFFFF00 | 0x80,
+        "highbits",
+    )
     # value avec bit de poids fort (signe)
     run_case(1, [(0x55, b"\x00\x00\x00", 0xFFFFFFFF)], 0x55, "valneg")
     # match au dernier index

@@ -7,6 +7,7 @@ Both logs share the format:
 We key each reply by (service, cmd, rank) where rank is the per-key occurrence
 index within the run — this skips past differing session IDs / seq numbers.
 """
+
 import re
 import sys
 from collections import defaultdict

@@ -12,6 +12,7 @@ Miroir Python = simple recherche du premier 0. On fuzze :
     qui stressent l'arithmétique du SWAR (carries 0x7efefefe…).
 On compare rax (uemu) BYTE-EXACT à la longueur de référence.
 """
+
 import sys
 from uemu import Emu, SCRATCH
 
@@ -20,6 +21,7 @@ VA = 0x14168B5F0
 
 class Lcg:
     """LCG déterministe (Numerical Recipes)."""
+
     def __init__(self, seed):
         self.s = seed & 0xFFFFFFFFFFFFFFFF
 

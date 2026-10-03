@@ -12,6 +12,7 @@ Le binaire décale les clés de `<<24` et compare en u64 non signé (bijection s
 Fuzz seedé des deux modes (clés présentes/absentes/bords/doublons). Sort 0 si byte-exact.
 Miroir = port `aphrody_nie_core::keyed_record_table`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -32,7 +33,7 @@ def build(keys, sorted_flag):
     data = bytearray(STRIDE * (len(keys) + 1))
     for i, k in enumerate(keys):
         hi = (k >> 8) & 0xFFFFFFFF  # u32 @ +0xa0
-        lo = k & 0xFF               # u8  @ +0xa4
+        lo = k & 0xFF  # u8  @ +0xa4
         struct.pack_into("<I", data, i * STRIDE + 0xA0, hi)
         data[i * STRIDE + 0xA4] = lo
     return bytes(hdr), bytes(data)
@@ -102,12 +103,14 @@ for _ in range(500):
             mr = mirror_lookup(keys, sorted_flag, tg)
             # En mode linéaire avec doublons, l'index exact compte ; en trié les doublons rendent
             # n'importe quel index valide — on vérifie que la CLÉ trouvée correspond.
-            ok = (er == mr)
+            ok = er == mr
             if not ok and sorted_flag and er is not None and mr is not None:
                 ok = keys[er] == keys[mr] == tg
             if not ok:
                 fails += 1
                 if fails <= 8:
                     print(f"  ✗ sorted={sorted_flag} keys={keys} tg={tg}: uemu={er} ≠ miroir={mr}")
-print(f"keyed record lookup (FUN_1404af530): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+print(
+    f"keyed record lookup (FUN_1404af530): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

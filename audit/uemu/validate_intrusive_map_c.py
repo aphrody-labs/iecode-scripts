@@ -11,6 +11,7 @@ est byte-exact contre une DEUXIÈME fonction réelle → unification + double-va
 Les miroirs (linéaire indexé par nœud ; trié sur clés triées) sont stride-agnostiques. Sort 0 si
 byte-exact. Fuzz seedé des deux modes.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -166,7 +167,9 @@ for _ in range(180):
         if er != mr:
             fails += 1
             if fails <= 8:
-                print(f"  ✗ LIN head={head} key={key} entries={entries} next={nexts}: uemu={er} ≠ {mr}")
+                print(
+                    f"  ✗ LIN head={head} key={key} entries={entries} next={nexts}: uemu={er} ≠ {mr}"
+                )
 
 # Trié : arbres triés aléatoires avec doublons, cibles présentes/absentes/bords.
 for _ in range(400):
@@ -185,5 +188,7 @@ for _ in range(400):
             if fails <= 8:
                 print(f"  ✗ SORT keys={keys} perm={perm} tg={tg & 0xFFFFFFFF:#x}: uemu={er} ≠ {mr}")
 
-print(f"intrusive_map (stride 0xc, FUN_14050b0b0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+print(
+    f"intrusive_map (stride 0xc, FUN_14050b0b0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

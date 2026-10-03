@@ -1,4 +1,5 @@
 """Compare Git package naming on Windows and POSIX without compiling Ruzu."""
+
 import os
 import shutil
 import subprocess
@@ -24,8 +25,9 @@ class PackageRevision(unittest.TestCase):
         self.hash = self.git("rev-parse", "HEAD")[:12]
 
     def git(self, *args):
-        return subprocess.run(["git", *args], cwd=self.repo, check=True,
-                              capture_output=True, text=True).stdout.strip()
+        return subprocess.run(
+            ["git", *args], cwd=self.repo, check=True, capture_output=True, text=True
+        ).stdout.strip()
 
     def runners(self):
         shell = shutil.which("sh")
@@ -38,8 +40,16 @@ class PackageRevision(unittest.TestCase):
             yield [shell, str(SCRIPTS / "package-revision.sh"), str(self.repo)]
         powershell = shutil.which("pwsh") or shutil.which("powershell")
         if powershell:
-            yield [powershell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-                   str(SCRIPTS / "package-revision.ps1"), "-Repository", str(self.repo)]
+            yield [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(SCRIPTS / "package-revision.ps1"),
+                "-Repository",
+                str(self.repo),
+            ]
 
     def check(self, expected):
         commands = list(self.runners())
@@ -108,11 +118,14 @@ class PackageRevision(unittest.TestCase):
         self.check(f"main-{self.hash}-dirty")
 
     def test_uninitialized_submodule_is_dirty(self):
-        (self.repo / ".gitmodules").write_text(
-            '[submodule "dep"]\npath = dep\nurl = ./unused\n')
+        (self.repo / ".gitmodules").write_text('[submodule "dep"]\npath = dep\nurl = ./unused\n')
         self.git("add", ".gitmodules")
-        self.git("update-index", "--add", "--cacheinfo",
-                 "160000," + self.git("rev-parse", "HEAD") + ",dep")
+        self.git(
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            "160000," + self.git("rev-parse", "HEAD") + ",dep",
+        )
         (self.repo / "dep").mkdir()
         self.git("commit", "-qm", "submodule")
         self.hash = self.git("rev-parse", "HEAD")[:12]

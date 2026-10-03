@@ -18,6 +18,7 @@ La rangée r est calculée via r9b (0..13) : la branche global du corps (cmp r9b
 Le global 0x141fa8fc0 est un pointeur singleton runtime (zero-init dans le PE) → on le fournit
 et on le fuzze (P -> +0x69a0 -> Q -> +0x2ca97f -> octet) comme une ENTRÉE.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -36,16 +37,18 @@ ENTRY_OFF0 = 0x80  # premier id (piVar1[-1]) du premier entry
 TABLE_BYTES = N_ROWS * ROW_STRIDE  # 0x7268
 
 # Adresses du harness
-SCRATCH = 0x2000_0000          # param_1 + slot du pointeur de table
+SCRATCH = 0x2000_0000  # param_1 + slot du pointeur de table
 TABLE_BASE = SCRATCH + 0x1_0000  # table elle-même (dans SCRATCH, mappé)
-REGION = 0x3000_0000           # chaîne du singleton global (région dédiée mappée)
-REGION_SIZE = 0x40_0000        # > 0x2ca97f
+REGION = 0x3000_0000  # chaîne du singleton global (région dédiée mappée)
+REGION_SIZE = 0x40_0000  # > 0x2ca97f
 
 
 def build_table_view(table_bytes):
     """retourne fn(off)->u32 sur les octets de la table."""
+
     def rd(off):
         return struct.unpack_from("<I", table_bytes, off)[0]
+
     return rd
 
 
@@ -162,8 +165,10 @@ def main():
         if got != want:
             mism += 1
             if mism <= 12:
-                print(f"[{c}] MISMATCH got={got:#018x} want={want:#018x} "
-                      f"param2={param2:#x} param3={param3} rb={region_byte}")
+                print(
+                    f"[{c}] MISMATCH got={got:#018x} want={want:#018x} "
+                    f"param2={param2:#x} param3={param3} rb={region_byte}"
+                )
 
     print(f"\ncas={cases} mismatch={mism} branches={branch_hits}")
     if mism == 0 and cases == NCASES:

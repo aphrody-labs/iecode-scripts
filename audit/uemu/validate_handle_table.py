@@ -14,6 +14,7 @@ On fournit le manager + arrays en mémoire uemu (global non dégénéré, param�
 de record renvoyé. Fuzz seedé (handles valides/nuls/gén-incohérents, actifs variés). Sort 0 si
 byte-exact. Miroir = port `aphrody_nie_core::handle_table`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -95,6 +96,10 @@ for _ in range(400):
     if er != mr:
         fails += 1
         if fails <= 8:
-            print(f"  ✗ records={records} handles={[hex(h) for h in handles]}: uemu={er} ≠ miroir={mr}")
-print(f"handle table find-active (FUN_1411da770): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+            print(
+                f"  ✗ records={records} handles={[hex(h) for h in handles]}: uemu={er} ≠ miroir={mr}"
+            )
+print(
+    f"handle table find-active (FUN_1411da770): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

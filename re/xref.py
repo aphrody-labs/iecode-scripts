@@ -57,7 +57,9 @@ def find_string(data: bytes, base: int, secs, needle: str) -> list[int]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--exe", required=True)
     parser.add_argument("--target", help="address to find references to (hex)")
     parser.add_argument("--string", help="find the string first, then its references")
@@ -113,7 +115,9 @@ def main() -> None:
             if instruction_address + tail + disp in wanted:
                 start = max(raw, offset - args.context)
                 blob = " ".join(f"{b:02X}" for b in data[start : offset + 4 + args.context])
-                print(f"  @0x{instruction_address - (offset - start):X}  disp=0x{disp:X} fin=+{tail}  {blob}")
+                print(
+                    f"  @0x{instruction_address - (offset - start):X}  disp=0x{disp:X} fin=+{tail}  {blob}"
+                )
                 found += 1
                 break
     print(f"{found} candidat(s) — a confirmer par desassemblage, jamais tel quel")

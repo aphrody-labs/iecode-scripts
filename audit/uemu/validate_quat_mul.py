@@ -11,6 +11,7 @@ Ordre d'accumulation tiré de l'asm (mulss/addss/subss scalaires, AUCUNE FMA) :
   out[3] = ((w1*w2 - x2*x1) - y1*y2) - z2*z1
 La multiplication f32 est commutative et exacte au bit ; seul l'ordre des +/- importe.
 """
+
 import ctypes
 import struct
 import sys
@@ -89,8 +90,24 @@ def main():
 
     cases = []
     # bords explicites
-    specials = [0.0, -0.0, 1.0, -1.0, 0.5, -0.5, 2.0, 1e-20, -1e-20, 1e20, -1e20,
-                float("inf"), float("-inf"), 3.14159265, -2.71828, 0.70710678]
+    specials = [
+        0.0,
+        -0.0,
+        1.0,
+        -1.0,
+        0.5,
+        -0.5,
+        2.0,
+        1e-20,
+        -1e-20,
+        1e20,
+        -1e20,
+        float("inf"),
+        float("-inf"),
+        3.14159265,
+        -2.71828,
+        0.70710678,
+    ]
     # quelques quaternions normalisés-ish + paires de spéciaux
     for a in specials:
         for b in specials[:6]:
@@ -126,8 +143,10 @@ def main():
                     print(f"  emu={emu[k]!r} (0x{be:08x})  mir={mir[k]!r} (0x{bm:08x})")
                 break
 
-    print(f"\n{len(cases)} cas, {finite_comps} comparaisons finies/inf byte-exact, "
-          f"{nan_cases} NaN canonicalisés, {fails} mismatch")
+    print(
+        f"\n{len(cases)} cas, {finite_comps} comparaisons finies/inf byte-exact, "
+        f"{nan_cases} NaN canonicalisés, {fails} mismatch"
+    )
     if fails == 0:
         print("BYTE-EXACT")
         sys.exit(0)

@@ -81,14 +81,14 @@ def request_compare_mask(request_display_words):
     raw_high = _display_word_to_u32(request_display_words[1])
     if raw_low is None or raw_high is None:
         return None
-    cmd_type = raw_low & 0xffff
+    cmd_type = raw_low & 0xFFFF
     if cmd_type >= 16:
         return None  # TIPC — skip gating
-    num_x = (raw_low >> 16) & 0xf
-    num_a = (raw_low >> 20) & 0xf
-    num_b = (raw_low >> 24) & 0xf
-    num_w = (raw_low >> 28) & 0xf
-    data_size = raw_high & 0x3ff
+    num_x = (raw_low >> 16) & 0xF
+    num_a = (raw_low >> 20) & 0xF
+    num_b = (raw_low >> 24) & 0xF
+    num_w = (raw_low >> 28) & 0xF
+    data_size = raw_high & 0x3FF
     enable_hd = (raw_high >> 31) & 1
     if data_size == 0:
         return None
@@ -100,8 +100,8 @@ def request_compare_mask(request_display_words):
         hdh = _display_word_to_u32(request_display_words[2])
         if hdh is None:
             return None
-        num_copy = (hdh >> 1) & 0xf
-        num_move = (hdh >> 5) & 0xf
+        num_copy = (hdh >> 1) & 0xF
+        num_move = (hdh >> 5) & 0xF
         index += 1 + num_copy + num_move
     index += 2 * num_x + 3 * num_a + 3 * num_b + 3 * num_w
     pre_align_end = index  # guest-written up to here (exclusive)
@@ -135,10 +135,10 @@ def response_compare_mask(response_display_words):
     raw_high = _display_word_to_u32(response_display_words[1])
     if raw_low is None or raw_high is None:
         return None
-    cmd_type = raw_low & 0xffff
+    cmd_type = raw_low & 0xFFFF
     if cmd_type >= 16:
         return None
-    data_size = raw_high & 0x3ff
+    data_size = raw_high & 0x3FF
     enable_hd = (raw_high >> 31) & 1
     if data_size < 6:
         return None
@@ -150,8 +150,8 @@ def response_compare_mask(response_display_words):
         hdh = _display_word_to_u32(response_display_words[2])
         if hdh is None:
             return None
-        num_copy = (hdh >> 1) & 0xf
-        num_move = (hdh >> 5) & 0xf
+        num_copy = (hdh >> 1) & 0xF
+        num_move = (hdh >> 5) & 0xF
         index += 1 + num_copy + num_move
     rem = index & 3
     if rem:
@@ -341,7 +341,7 @@ def main():
     for i in range(n):
         r, z = ruzu[i], zuyu[i]
         if r["imm"] != z["imm"]:
-            print(f"\n[SVC #{i+1}] IMM DIFFERS: ruzu=0x{r['imm']:02x} zuyu=0x{z['imm']:02x}")
+            print(f"\n[SVC #{i + 1}] IMM DIFFERS: ruzu=0x{r['imm']:02x} zuyu=0x{z['imm']:02x}")
             print(f"  ruzu args: {r['args']}")
             print(f"  zuyu args: {z['args']}")
             return
@@ -353,10 +353,11 @@ def main():
             z_args = z["args"].split(",")
             if len(r_args) >= 7 and r_args[:7] == z_args[:7]:
                 continue  # only last arg differs (likely scratch)
-            print(f"\n[SVC #{i+1}] ARGS DIFFER (imm=0x{r['imm']:02x}):")
+            print(f"\n[SVC #{i + 1}] ARGS DIFFER (imm=0x{r['imm']:02x}):")
             print(f"  ruzu: {r['args']}")
             print(f"  zuyu: {z['args']}")
             return
+
         # Compare TLS_REQ and the selected response view when available on both
         # sides. The mask-based gate suppresses stale-residue differences in
         # words the guest (or handler) did not actually write.
@@ -380,7 +381,7 @@ def main():
                 r_shown = " ".join(r_words[:capture])
                 z_shown = " ".join(z_words[:capture])
                 print(
-                    f"\n[SVC #{i+1}] {label} DIFFERS at word[{diff_idx}] "
+                    f"\n[SVC #{i + 1}] {label} DIFFERS at word[{diff_idx}] "
                     f"(imm=0x{r['imm']:02x}, gate mask has {len(mask)} words):"
                 )
                 print(f"  ruzu: {r_shown}")
@@ -419,8 +420,10 @@ def main():
             z_bytes = z_hex.replace(" ", "")
             common_chars = min(len(r_bytes), len(z_bytes))
             if r_bytes[:common_chars] != z_bytes[:common_chars]:
-                print(f"\n[SVC #{i+1}] OUT_BUF DIFFERS "
-                      f"(imm=0x{r['imm']:02x}, ruzu_size=0x{r_size:x}, zuyu_size=0x{z_size:x}):")
+                print(
+                    f"\n[SVC #{i + 1}] OUT_BUF DIFFERS "
+                    f"(imm=0x{r['imm']:02x}, ruzu_size=0x{r_size:x}, zuyu_size=0x{z_size:x}):"
+                )
                 print(f"  ruzu @0x{r_addr:x}: {r_hex}")
                 print(f"  zuyu @0x{z_addr:x}: {z_hex}")
                 return
@@ -432,8 +435,10 @@ def main():
                     and z_bytes[common_chars:].replace("0", "") == ""
                 )
                 if not tail_zero_only:
-                    print(f"\n[SVC #{i+1}] OUT_BUF TAIL DIFFERS (non-zero) "
-                          f"(imm=0x{r['imm']:02x}, ruzu_size=0x{r_size:x}, zuyu_size=0x{z_size:x}):")
+                    print(
+                        f"\n[SVC #{i + 1}] OUT_BUF TAIL DIFFERS (non-zero) "
+                        f"(imm=0x{r['imm']:02x}, ruzu_size=0x{r_size:x}, zuyu_size=0x{z_size:x}):"
+                    )
                     print(f"  ruzu @0x{r_addr:x}: {r_hex}")
                     print(f"  zuyu @0x{z_addr:x}: {z_hex}")
                     return

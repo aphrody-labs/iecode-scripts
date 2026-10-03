@@ -18,10 +18,10 @@ MEM2_BASE = 0x90000000
 MEM2_END = 0x94000000  # 64 MiB (Wii)
 
 SYSTEM_REGIONS = [
-    (0x80000000, 0x80004000, ".os_lowmem",     "DATA"),
+    (0x80000000, 0x80004000, ".os_lowmem", "DATA"),
     (0xC0000000, 0xC0004000, ".os_lowmem_unc", "DATA"),
-    (0xCC000000, 0xCC008004, ".mmio_gc",       "DATA"),
-    (0xCD000000, 0xCD008000, ".mmio_wii",      "DATA"),
+    (0xCC000000, 0xCC008004, ".mmio_gc", "DATA"),
+    (0xCD000000, 0xCD008000, ".mmio_wii", "DATA"),
 ]
 
 OS_GLOBALS = {

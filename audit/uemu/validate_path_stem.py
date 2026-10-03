@@ -11,6 +11,7 @@ Quirks reproduits exactement : scan du séparateur seulement si `len>2`, sur les
 (ni l'index 0 ni le dernier caractère ne comptent comme séparateur). Fuzz seedé de chemins variés
 + bords (vide, mono-char, point en tête, séparateur en tête/fin). Sort 0 si byte-exact. Miroir = port.
 """
+
 import sys
 from pathlib import Path
 
@@ -36,7 +37,7 @@ def mirror_stem(s: bytes) -> bytes:
     if n > 2:
         for i in range(n - 2, 0, -1):  # indices len-2 .. 1
             if s[i] in (0x2F, 0x5C):  # '/' ou '\\'
-                base = s[i + 1:]
+                base = s[i + 1 :]
                 break
     dot = base.rfind(b".")
     return base if dot < 0 else base[:dot]
@@ -55,9 +56,26 @@ fails = total = 0
 
 # Bords explicites + cas réels d'assets.
 fixed = [
-    b"", b"a", b".", b"..", b"a.", b".a", b"a.b", b"x/", b"/x", b"\\", b"a/b/c",
-    b"data/menu/main_menu_1.02.lua.bin", b"foo\\bar.baz.qux", b"noext",
-    b"chr/k0001/k0001.g4mdl", b"a/.config", b"...", b"a..b", b"/", b"//",
+    b"",
+    b"a",
+    b".",
+    b"..",
+    b"a.",
+    b".a",
+    b"a.b",
+    b"x/",
+    b"/x",
+    b"\\",
+    b"a/b/c",
+    b"data/menu/main_menu_1.02.lua.bin",
+    b"foo\\bar.baz.qux",
+    b"noext",
+    b"chr/k0001/k0001.g4mdl",
+    b"a/.config",
+    b"...",
+    b"a..b",
+    b"/",
+    b"//",
 ]
 for s in fixed:
     total += 1
@@ -90,5 +108,7 @@ for _ in range(1200):
         if fails <= 8:
             print(f"  ✗ {s!r}: uemu={bytes(er)!r} ≠ miroir={bytes(mr)!r}")
 
-print(f"path stem (FUN_140452820): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+print(
+    f"path stem (FUN_140452820): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

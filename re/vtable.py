@@ -123,7 +123,7 @@ def find_class(image: Image, wanted: str) -> int | None:
     Scanning beats trusting a database keyed on another build: the answer comes from the file
     the caller named, so a mismatch shows up as "not found" instead of as a wrong address.
     """
-    decorated = (f".?AV{wanted}@", )
+    decorated = (f".?AV{wanted}@",)
     for section in image.sections:
         if section.name != ".rdata":
             continue
@@ -138,7 +138,9 @@ def find_class(image: Image, wanted: str) -> int | None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--exe", required=True, help="PE to read; never inferred")
     parser.add_argument("--class", dest="klass", help="undecorated RTTI class name")
     parser.add_argument("--vtable", help="COL slot address, as `nie rtti` stores it (hex)")
@@ -179,7 +181,9 @@ def main() -> None:
     print(f"  {resolved} slots tombent sur un debut de fonction du .pdata")
     partages = {p: n for p, n in seen.items() if n > 1}
     if partages:
-        joint = ", ".join(f"0x{p:X} x{n}" for p, n in sorted(partages.items(), key=lambda kv: -kv[1]))
+        joint = ", ".join(
+            f"0x{p:X} x{n}" for p, n in sorted(partages.items(), key=lambda kv: -kv[1])
+        )
         print(f"  slots partages (souche par defaut, pas une methode propre) : {joint}")
 
 

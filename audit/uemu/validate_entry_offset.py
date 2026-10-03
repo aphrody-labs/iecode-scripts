@@ -13,23 +13,25 @@ FUN_140d3b8f0(param_1, param_2:byte, param_3:byte, param_4:u32) -> u64
 
 Le port renvoie l'OFFSET invariant (sans la base runtime).
 """
+
 import struct
 import sys
 
 import sys as _sys
 from pathlib import Path as _Path
+
 _sys.path.insert(0, str(_Path(__file__).resolve().parent))
 from uemu import Emu, SCRATCH
 
 VA = 0x140D3B8F0
 
 # Disposition mémoire (tout dans SCRATCH, pré-mappé, 1 MiB) :
-P1 = SCRATCH                         # rcx = param_1 ; base lue à P1+0x1758
-GLOBAL_VAR = 0x141FA8FC0            # variable globale dans l'image PE (load -> P)
-P = SCRATCH + 0x20000              # valeur du singleton (pointeur)
-Q_SLOT = P + 0x69A0                # P+0x69a0 contient Q
-BYTE_ADDR = SCRATCH + 0x90000      # octet lu à Q+0x2ca97f
-Q = BYTE_ADDR - 0x2CA97F           # valeur Q telle que Q+0x2ca97f == BYTE_ADDR
+P1 = SCRATCH  # rcx = param_1 ; base lue à P1+0x1758
+GLOBAL_VAR = 0x141FA8FC0  # variable globale dans l'image PE (load -> P)
+P = SCRATCH + 0x20000  # valeur du singleton (pointeur)
+Q_SLOT = P + 0x69A0  # P+0x69a0 contient Q
+BYTE_ADDR = SCRATCH + 0x90000  # octet lu à Q+0x2ca97f
+Q = BYTE_ADDR - 0x2CA97F  # valeur Q telle que Q+0x2ca97f == BYTE_ADDR
 
 assert 0 <= Q_SLOT - SCRATCH < 0x100000
 assert 0 <= BYTE_ADDR - SCRATCH < 0x100000
@@ -98,15 +100,17 @@ def main():
 
     fails = 0
     checked = 0
-    for (base, p2, p3, p4, gb) in cases:
+    for base, p2, p3, p4, gb in cases:
         got = run_emu(e, base, p2, p3, p4, gb)
         exp = model(base, p2, p3, p4, gb)
         checked += 1
         if got != exp:
             fails += 1
             if fails <= 20:
-                print(f"MISMATCH base={base:#x} p2={p2} p3={p3} p4={p4} gb={gb}: "
-                      f"emu={got:#x} model={exp:#x} diff={got-exp}")
+                print(
+                    f"MISMATCH base={base:#x} p2={p2} p3={p3} p4={p4} gb={gb}: "
+                    f"emu={got:#x} model={exp:#x} diff={got - exp}"
+                )
 
     print(f"cas vérifiés: {checked}")
     if fails == 0:

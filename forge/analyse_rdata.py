@@ -18,9 +18,22 @@ import pefile
 EXE = Path(sys.argv[1] if len(sys.argv) > 1 else "nie.exe")
 
 NOMS = [
-    "EXPORT", "IMPORT", "RESOURCE", "EXCEPTION", "SECURITY", "BASERELOC",
-    "DEBUG", "ARCHITECTURE", "GLOBALPTR", "TLS", "LOAD_CONFIG", "BOUND_IMPORT",
-    "IAT", "DELAY_IMPORT", "COM_DESCRIPTOR", "RESERVED",
+    "EXPORT",
+    "IMPORT",
+    "RESOURCE",
+    "EXCEPTION",
+    "SECURITY",
+    "BASERELOC",
+    "DEBUG",
+    "ARCHITECTURE",
+    "GLOBALPTR",
+    "TLS",
+    "LOAD_CONFIG",
+    "BOUND_IMPORT",
+    "IAT",
+    "DELAY_IMPORT",
+    "COM_DESCRIPTOR",
+    "RESERVED",
 ]
 
 
@@ -47,8 +60,10 @@ def main() -> None:
         if dedans:
             total_dir += d.Size
         print(f"  {NOMS[i]:16s} rva=0x{d.VirtualAddress:08x} size={d.Size:9d}{marque}")
-    print(f"\n  couvert par les directories : {total_dir} o "
-          f"({100 * total_dir / vsize:.2f}% de .rdata)\n")
+    print(
+        f"\n  couvert par les directories : {total_dir} o "
+        f"({100 * total_dir / vsize:.2f}% de .rdata)\n"
+    )
 
     # Imports : descripteurs + hint/name + thunks
     n_dll = n_fn = 0
@@ -74,8 +89,10 @@ def main() -> None:
         for e in r.entries:
             if e.type != 0 and rva0 <= e.rva < rva1:
                 n_reloc += 1
-    print(f"relocations dans .rdata : {n_reloc} pointeurs absolus "
-          f"({8 * n_reloc} octets, {100 * 8 * n_reloc / vsize:.2f}% de .rdata)")
+    print(
+        f"relocations dans .rdata : {n_reloc} pointeurs absolus "
+        f"({8 * n_reloc} octets, {100 * 8 * n_reloc / vsize:.2f}% de .rdata)"
+    )
 
 
 main()

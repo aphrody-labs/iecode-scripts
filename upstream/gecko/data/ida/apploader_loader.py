@@ -16,10 +16,10 @@ APPLOADER_HEADER_SIZE = 0x20
 
 
 SYSTEM_REGIONS = [
-    (0x80000000, 0x80004000, ".os_lowmem",     "DATA"),
+    (0x80000000, 0x80004000, ".os_lowmem", "DATA"),
     (0xC0000000, 0xC0004000, ".os_lowmem_unc", "DATA"),
-    (0xCC000000, 0xCC008004, ".mmio_gc",       "DATA"),
-    (0xCD000000, 0xCD008000, ".mmio_wii",      "DATA"),
+    (0xCC000000, 0xCC008004, ".mmio_gc", "DATA"),
+    (0xCD000000, 0xCD008000, ".mmio_wii", "DATA"),
 ]
 
 OS_GLOBALS = {
@@ -103,7 +103,7 @@ def _read_at(li, off, size):
 
 
 def _u32be(raw, off):
-    return struct.unpack(">I", raw[off:off + 4])[0]
+    return struct.unpack(">I", raw[off : off + 4])[0]
 
 
 def _add_segment(start, end, name, sclass, perm):
@@ -164,7 +164,13 @@ def load_file(li, neflags, format):
     image_start = APPLOADER_FILE_LOAD_BASE
     image_end = APPLOADER_FILE_LOAD_BASE + size
 
-    _add_segment(image_start, image_start + APPLOADER_HEADER_SIZE, ".apploader_header", "DATA", ida_segment.SEGPERM_READ)
+    _add_segment(
+        image_start,
+        image_start + APPLOADER_HEADER_SIZE,
+        ".apploader_header",
+        "DATA",
+        ida_segment.SEGPERM_READ,
+    )
     ida_bytes.put_bytes(image_start, raw[:APPLOADER_HEADER_SIZE])
 
     _add_segment(

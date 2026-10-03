@@ -1,4 +1,5 @@
 """Offline tests for the dedicated container packaging path (no Docker daemon)."""
+
 import hashlib
 import importlib.util
 from pathlib import Path
@@ -23,8 +24,12 @@ PACKAGE = load("steamdeck_package", "scripts/ruzu/steamdeck/package.py")
 
 class SteamDeckTests(unittest.TestCase):
     def test_dry_run_dispatch_and_isolation(self):
-        result = subprocess.run(["sh", "build.sh", "steamdeck", "--dry-run", "--jobs", "3"],
-                                cwd=ROOT, capture_output=True, text=True)
+        result = subprocess.run(
+            ["sh", "build.sh", "steamdeck", "--dry-run", "--jobs", "3"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("docker build --platform linux/amd64", result.stdout)
         self.assertIn("dst=/source,readonly", result.stdout)
@@ -36,8 +41,9 @@ class SteamDeckTests(unittest.TestCase):
 
     def test_invalid_job_count_and_options(self):
         for args in (["--jobs", "0"], ["--official"], ["--skip-deps"]):
-            result = subprocess.run(["sh", "build.sh", "steamdeck", *args], cwd=ROOT,
-                                    capture_output=True, text=True)
+            result = subprocess.run(
+                ["sh", "build.sh", "steamdeck", *args], cwd=ROOT, capture_output=True, text=True
+            )
             self.assertNotEqual(result.returncode, 0)
 
     def test_missing_docker_stops_without_writes(self):
@@ -46,21 +52,32 @@ class SteamDeckTests(unittest.TestCase):
                 HOST.preflight(ROOT)
 
     def test_low_disk_stops_before_build(self):
-        with patch.object(HOST.shutil, "which", return_value="docker"), \
-             patch.object(HOST.subprocess, "run"), \
-             patch.object(HOST.shutil, "disk_usage", return_value=HOST.shutil._ntuple_diskusage(100, 99, 1)):
+        with (
+            patch.object(HOST.shutil, "which", return_value="docker"),
+            patch.object(HOST.subprocess, "run"),
+            patch.object(
+                HOST.shutil, "disk_usage", return_value=HOST.shutil._ntuple_diskusage(100, 99, 1)
+            ),
+        ):
             with self.assertRaisesRegex(RuntimeError, "35 GiB"):
                 HOST.preflight(ROOT)
 
     def test_host_without_zen2_features_can_build(self):
-        with patch.object(HOST.platform, "system", return_value="Linux"), \
-             patch.object(HOST.platform, "machine", return_value="x86_64"), \
-             patch.object(HOST.Path, "read_text", side_effect=AssertionError("no CPU gate")), \
-             patch.object(HOST.shutil, "which", return_value="docker"), \
-             patch.object(HOST.subprocess, "run"), \
-             patch.object(HOST.subprocess, "check_output", return_value=""), \
-             patch.object(HOST.shutil, "disk_usage", return_value=HOST.shutil._ntuple_diskusage(
-                 2 * HOST.MIN_FREE_BYTES, 0, 2 * HOST.MIN_FREE_BYTES)):
+        with (
+            patch.object(HOST.platform, "system", return_value="Linux"),
+            patch.object(HOST.platform, "machine", return_value="x86_64"),
+            patch.object(HOST.Path, "read_text", side_effect=AssertionError("no CPU gate")),
+            patch.object(HOST.shutil, "which", return_value="docker"),
+            patch.object(HOST.subprocess, "run"),
+            patch.object(HOST.subprocess, "check_output", return_value=""),
+            patch.object(
+                HOST.shutil,
+                "disk_usage",
+                return_value=HOST.shutil._ntuple_diskusage(
+                    2 * HOST.MIN_FREE_BYTES, 0, 2 * HOST.MIN_FREE_BYTES
+                ),
+            ),
+        ):
             HOST.preflight(ROOT)
 
     def test_target_flags_and_downloads_are_pinned(self):
@@ -86,8 +103,14 @@ class SteamDeckTests(unittest.TestCase):
             binary.write_bytes(b"synthetic binary")
             libraries = output / "system-libraries"
             libraries.mkdir()
-            for name in ("libasound.so.2", "libjack.so.0", "libpulse.so.0",
-                         "libpipewire-0.3.so.0", "libudev.so.1", "libdecor-0.so.0"):
+            for name in (
+                "libasound.so.2",
+                "libjack.so.0",
+                "libpulse.so.0",
+                "libpipewire-0.3.so.0",
+                "libudev.so.1",
+                "libdecor-0.so.0",
+            ):
                 (libraries / name).touch()
             seen = []
 
@@ -118,13 +141,16 @@ class SteamDeckTests(unittest.TestCase):
                     self.assertTrue((appdir / "share/doc/ruzu/build-info.txt").is_file())
                     (Path(env["OUTPATH"]) / env["OUTNAME"]).write_bytes(b"synthetic AppImage")
 
-            with patch.dict(PACKAGE.os.environ, {"OPTIMIZE_LAUNCH": "1", "STRACE_MODE": "1"}), \
-                 patch.object(PACKAGE.subprocess, "run", side_effect=run):
+            with (
+                patch.dict(PACKAGE.os.environ, {"OPTIMIZE_LAUNCH": "1", "STRACE_MODE": "1"}),
+                patch.object(PACKAGE.subprocess, "run", side_effect=run),
+            ):
                 PACKAGE.package("test-revision", ROOT, output, libraries)
             artifact = output / "artifacts/Ruzu-SteamDeck-test-revision-x86_64.AppImage"
             checksum = hashlib.sha256(artifact.read_bytes()).hexdigest()
-            self.assertEqual(Path(str(artifact) + ".sha256").read_text(),
-                             f"{checksum}  {artifact.name}\n")
+            self.assertEqual(
+                Path(str(artifact) + ".sha256").read_text(), f"{checksum}  {artifact.name}\n"
+            )
             self.assertEqual(len(seen), 3)
             self.assertEqual(binary.read_bytes(), b"synthetic binary")
 

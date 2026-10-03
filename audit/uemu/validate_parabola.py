@@ -16,15 +16,16 @@ VALIDATION : on émule la fonction RÉELLE avec des floats connus, et on compare
 vitesse, t) au calcul Rust/Python de la formule reversée — BYTE-EXACT (bits f32). Si OK → la physique
 parabolique est fidèlement reversée, prouvée contre le binaire, sans inventer ni lancer le jeu.
 """
+
 import struct
 import sys
 
 from uemu import SCRATCH, Emu
 
 VADDR = 0x141334600
-OBJ = SCRATCH            # rcx : l'objet BallMoveSimpleParabora
-IN = SCRATCH + 0x2000    # r8  : les paramètres d'entrée
-OUT = SCRATCH + 0x4000   # rdx : la position de sortie
+OBJ = SCRATCH  # rcx : l'objet BallMoveSimpleParabora
+IN = SCRATCH + 0x2000  # r8  : les paramètres d'entrée
+OUT = SCRATCH + 0x4000  # rdx : la position de sortie
 
 
 def vec(x, y, z, w=0.0):
@@ -38,7 +39,7 @@ def f4(b):
 # Valeurs de test (4 lanes ; w=0).
 p0 = (1.0, 2.0, 3.0, 0.0)
 v = (4.0, 5.0, 6.0, 0.0)
-a = (0.0, -9.8, 0.0, 0.0)   # gravité sur Y
+a = (0.0, -9.8, 0.0, 0.0)  # gravité sur Y
 dt = 0.5
 t0, t_max = 0.0, 10.0
 
@@ -52,12 +53,19 @@ struct.pack_into("<4f", inp, 0x10, *p0)
 struct.pack_into("<f", inp, 0x38, dt)
 
 e = Emu()
-out = e.call(VADDR, rcx=OBJ, rdx=OUT, r8=IN, mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)},
-             read={OUT: 16, OBJ + 0x180: 16, OBJ + 0x190: 4})
+out = e.call(
+    VADDR,
+    rcx=OBJ,
+    rdx=OUT,
+    r8=IN,
+    mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)},
+    read={OUT: 16, OBJ + 0x180: 16, OBJ + 0x190: 4},
+)
 
 got_pos = f4(out["mem"][OUT])
 got_vel = f4(out["mem"][OBJ + 0x180])
 got_t = struct.unpack("<f", out["mem"][OBJ + 0x190])[0]
+
 
 def f32(x):
     return struct.unpack("<f", struct.pack("<f", x))[0]  # arrondi simple précision
@@ -94,7 +102,11 @@ if errs:
         print("  -", x)
     sys.exit(1)
 
-print("✓ VALIDÉ byte-exact : BallMoveSimpleParabora::vmethod_3 (0x141334600) — physique == binaire réel.")
+print(
+    "✓ VALIDÉ byte-exact : BallMoveSimpleParabora::vmethod_3 (0x141334600) — physique == binaire réel."
+)
 print(f"  new_pos = {got_pos[:3]}  (= p0 + v·dt + ½·a·dt²)")
 print(f"  new_vel = {got_vel[:3]}  (= v + a·dt)   |   t = {got_t}")
-print("→ VRAIE intégration physique de gameplay REVERSÉE + VALIDÉE contre l'oracle (sans inventer).")
+print(
+    "→ VRAIE intégration physique de gameplay REVERSÉE + VALIDÉE contre l'oracle (sans inventer)."
+)

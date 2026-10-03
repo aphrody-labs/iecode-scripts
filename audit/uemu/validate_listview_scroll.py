@@ -15,6 +15,7 @@ Toutes les ecritures mesurees ont deja eu lieu a ce point.
 
 Usage : NIE_EXE=dist/nie.exe python3 scripts/audit/uemu/validate_listview_scroll.py
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -61,7 +62,9 @@ def i32(v):
 
 def emu(e, case, forward):
     obj = build(**case)
-    out = e.call(FN, rcx=THIS, rdx=1 if forward else 0, mem={THIS: obj}, read={THIS: SIZE}, stop=STOP)
+    out = e.call(
+        FN, rcx=THIS, rdx=1 if forward else 0, mem={THIS: obj}, read={THIS: SIZE}, stop=STOP
+    )
     got = out["mem"][THIS]
     return tuple(i32(struct.unpack_from("<i", got, off)[0]) for off in (0x12C, 0x134, 0x138))
 
@@ -85,7 +88,7 @@ def mirror(case, forward):
     delta = anchor - top
     if forward:
         if c4 + c0 + top >= rows:
-            return (top, anchor, selected)        # butee : rien n'est ecrit
+            return (top, anchor, selected)  # butee : rien n'est ecrit
         probe = c4 + c0 + top + 1
         new_top = top + 1
         if probe > rows:
@@ -97,7 +100,7 @@ def mirror(case, forward):
 
     floor = -c0
     if top <= floor:
-        return (top, anchor, selected)            # butee haute : rien n'est ecrit
+        return (top, anchor, selected)  # butee haute : rien n'est ecrit
     new_top = top - 1
     if new_top < floor:
         new_top = floor

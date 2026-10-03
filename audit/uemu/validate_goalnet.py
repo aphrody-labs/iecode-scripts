@@ -12,16 +12,17 @@ Géométrie pure (le reste de Goalnet, après l'appel 0x1413378C0, est hors-scop
 On monte l'objet + la table + la cible, émule (stub_calls : l'appel post-boucle 0x1413378C0 est
 stubé ; nearest est écrit AVANT), et on compare obj[0x1020] au calcul f32 Python. BYTE-EXACT.
 """
+
 import struct
 import sys
 
 from uemu import SCRATCH, Emu
 
 VADDR = 0x1413385C0
-OBJ = SCRATCH                 # rcx : l'objet BallMoveGoalnet
-INP = SCRATCH + 0x8000        # r8  : input ; [INP] = pointeur contexte
-CTX = SCRATCH + 0xA000        # contexte : [0x15F0..] = position cible
-OUT = SCRATCH + 0xC000        # rdx (non lu)
+OBJ = SCRATCH  # rcx : l'objet BallMoveGoalnet
+INP = SCRATCH + 0x8000  # r8  : input ; [INP] = pointeur contexte
+CTX = SCRATCH + 0xA000  # contexte : [0x15F0..] = position cible
+OUT = SCRATCH + 0xC000  # rdx (non lu)
 STRIDE = 0x760
 
 
@@ -52,17 +53,23 @@ def emulate(points, target):
     ctx = bytearray(0x1700)
     struct.pack_into("<4f", ctx, 0x15F0, target[0], target[1], target[2], 0.0)
     e = Emu()
-    out = e.call(VADDR, rcx=OBJ, rdx=OUT, r8=INP,
-                 mem={OBJ: bytes(obj), INP: bytes(inp), CTX: bytes(ctx), OUT: bytes(16)},
-                 read={OBJ + 0x1020: 4}, stub_calls=True)
+    out = e.call(
+        VADDR,
+        rcx=OBJ,
+        rdx=OUT,
+        r8=INP,
+        mem={OBJ: bytes(obj), INP: bytes(inp), CTX: bytes(ctx), OUT: bytes(16)},
+        read={OBJ + 0x1020: 4},
+        stub_calls=True,
+    )
     return struct.unpack("<i", out["mem"][OBJ + 0x1020])[0]
 
 
 CASES = [
-    ([(5.0, 0.0, 0.0), (1.0, 1.0, 1.0), (-3.0, 2.0, 4.0)], (0.0, 0.0, 0.0)),   # le plus proche = 1
-    ([(10.0, 10.0, 10.0), (0.5, 0.5, 0.5)], (0.0, 0.0, 0.0)),                  # = 1
-    ([(2.0, 0.0, 0.0), (0.0, 2.0, 0.0), (0.0, 0.0, 1.5)], (0.1, 0.1, 0.1)),    # = 2 (dz=1.4)
-    ([(1.0, 1.0, 1.0), (1.0, 1.0, 1.0)], (0.0, 0.0, 0.0)),                     # égalité → first (0)
+    ([(5.0, 0.0, 0.0), (1.0, 1.0, 1.0), (-3.0, 2.0, 4.0)], (0.0, 0.0, 0.0)),  # le plus proche = 1
+    ([(10.0, 10.0, 10.0), (0.5, 0.5, 0.5)], (0.0, 0.0, 0.0)),  # = 1
+    ([(2.0, 0.0, 0.0), (0.0, 2.0, 0.0), (0.0, 0.0, 1.5)], (0.1, 0.1, 0.1)),  # = 2 (dz=1.4)
+    ([(1.0, 1.0, 1.0), (1.0, 1.0, 1.0)], (0.0, 0.0, 0.0)),  # égalité → first (0)
 ]
 errs = []
 for pts, tgt in CASES:
@@ -76,5 +83,7 @@ if errs:
     for x in errs:
         print("  -", x)
     sys.exit(1)
-print(f"✓ VALIDÉ byte-exact ({len(CASES)} cas) : BallMoveGoalnet nearest-point — argmin d2 == binaire.")
+print(
+    f"✓ VALIDÉ byte-exact ({len(CASES)} cas) : BallMoveGoalnet nearest-point — argmin d2 == binaire."
+)
 print("→ 4e brique physique (géométrie de filet de but) reversée + validée vs oracle.")

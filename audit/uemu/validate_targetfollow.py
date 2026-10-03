@@ -12,6 +12,7 @@ Formule reversée (consts .data lus = 0) :
     step[i]  = fma(delta[i] - sub_c[i], ease, fma_c[i])     (sub_c, fma_c = 0)
     new_pos  = origin + step                     → [rdx]
 """
+
 import struct
 import sys
 
@@ -27,7 +28,7 @@ def read4f(va):
     for s in pe.sections:
         a = _base + s.VirtualAddress
         if a <= va < a + max(s.Misc_VirtualSize, len(s.get_data())):
-            d = s.get_data()[va - a:va - a + 16]
+            d = s.get_data()[va - a : va - a + 16]
             return struct.unpack("<4f", d) if len(d) >= 16 else (0.0, 0.0, 0.0, 0.0)
     return (0.0, 0.0, 0.0, 0.0)
 
@@ -53,8 +54,15 @@ def emulate(target, bound, flag, dur, t0, origin, dt):
     inp = bytearray(0x40)
     struct.pack_into("<4f", inp, 0x10, *origin, 0.0)
     struct.pack_into("<f", inp, 0x38, dt)
-    out = e.call(0x14133C080, rcx=OBJ, rdx=OUT, r8=IN,
-                 mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)}, read={OUT: 16}, stub_calls=True)
+    out = e.call(
+        0x14133C080,
+        rcx=OBJ,
+        rdx=OUT,
+        r8=IN,
+        mem={OBJ: bytes(obj), IN: bytes(inp), OUT: bytes(16)},
+        read={OUT: 16},
+        stub_calls=True,
+    )
     return struct.unpack("<4f", out["mem"][OUT])[:3], out["error"]
 
 
@@ -65,14 +73,15 @@ def formula(target, bound, dur, t0, origin, dt):
     delta = [f32(tgt[i] - origin[i]) for i in range(3)]
     ease = f32(min(max(f32(t / dur), 0.0), 1.0)) if dur > 0 else 1.0
     import math
+
     step = [f32(math.fma(f32(delta[i] - SUB_C[i]), ease, FMA_C[i])) for i in range(3)]
     return tuple(f32(origin[i] + step[i]) for i in range(3))
 
 
 CASES = [
-    ((5.0, 8.0, 5.0), 0.0, 0, 2.0, 0.0, (0.0, 0.0, 0.0), 0.5),     # ease 0.25
-    ((10.0, -3.0, 2.0), 1.0, 0, 4.0, 1.0, (1.0, 1.0, 1.0), 1.0),   # y clamp -3→1, ease 0.5
-    ((3.0, 3.0, 3.0), 0.0, 0, 1.0, 0.0, (0.0, 0.0, 0.0), 5.0),     # t>dur → ease clamp 1
+    ((5.0, 8.0, 5.0), 0.0, 0, 2.0, 0.0, (0.0, 0.0, 0.0), 0.5),  # ease 0.25
+    ((10.0, -3.0, 2.0), 1.0, 0, 4.0, 1.0, (1.0, 1.0, 1.0), 1.0),  # y clamp -3→1, ease 0.5
+    ((3.0, 3.0, 3.0), 0.0, 0, 1.0, 0.0, (0.0, 0.0, 0.0), 5.0),  # t>dur → ease clamp 1
 ]
 errs = []
 for c in CASES:
@@ -88,6 +97,10 @@ if errs:
     for x in errs:
         print("  -", x)
     sys.exit(1)
-print(f"✓ VALIDÉ byte-exact ({len(CASES)} cas) : BallMoveTargetFollow::vmethod_3 — physique (SSE3/4+FMA) == binaire.")
+print(
+    f"✓ VALIDÉ byte-exact ({len(CASES)} cas) : BallMoveTargetFollow::vmethod_3 — physique (SSE3/4+FMA) == binaire."
+)
 print(f"  consts .data : sub={SUB_C[:3]} fma={FMA_C[:3]}")
-print("→ 3e physique de gameplay reversée + validée (oracle étendu haddps/insertps/sqrtps/mem-FMA).")
+print(
+    "→ 3e physique de gameplay reversée + validée (oracle étendu haddps/insertps/sqrtps/mem-FMA)."
+)

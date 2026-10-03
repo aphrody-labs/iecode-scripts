@@ -22,15 +22,27 @@ PLATFORMS = {
 
 GC_WHITELIST = ["(US"]
 GC_BLACKLIST = [
-    "Alpha", "Beta", "Proto", "Rev ", "Action Replay", "(v1.", "(Unl)", "Disc 2", "Disc 3", "Demo", "Preview", "Bonus", "Debug"
+    "Alpha",
+    "Beta",
+    "Proto",
+    "Rev ",
+    "Action Replay",
+    "(v1.",
+    "(Unl)",
+    "Disc 2",
+    "Disc 3",
+    "Demo",
+    "Preview",
+    "Bonus",
+    "Debug",
 ]
 
 RVZ_MAGIC = b"RVZ\x01"
 DISC_HEADER_OFFSET = 0x48 + 0x10
 DISC_HEADER_SIZE = 0x80
 
-WII_MAGIC = b"\x5D\x1C\x9E\xA3"
-GC_MAGIC = b"\xC2\x33\x9F\x3D"
+WII_MAGIC = b"\x5d\x1c\x9e\xa3"
+GC_MAGIC = b"\xc2\x33\x9f\x3d"
 
 
 def is_allowed(name: str, platform: str) -> bool:
@@ -94,7 +106,9 @@ def build_platform(platform: str) -> None:
         if not is_allowed(rom_path.name, platform):
             continue
         try:
-            entry = index_zip(rom_path) if rom_path.suffix.lower() == ".zip" else index_rvz(rom_path)
+            entry = (
+                index_zip(rom_path) if rom_path.suffix.lower() == ".zip" else index_rvz(rom_path)
+            )
         except Exception as e:
             print(f"[skip] {rom_path.name}: {e}")
             continue
@@ -108,7 +122,9 @@ def build_platform(platform: str) -> None:
         print(f"{game_code}  {internal_name}  ({stem})")
 
     dupes = {code: entries for code, entries in collisions.items() if len(entries) > 1}
-    print(f"\nindexed {len(collisions)} unique game codes across {sum(len(v) for v in collisions.values())} zips")
+    print(
+        f"\nindexed {len(collisions)} unique game codes across {sum(len(v) for v in collisions.values())} zips"
+    )
     if dupes:
         print(f"\n{len(dupes)} duplicate game code(s):")
         for code, entries in sorted(dupes.items()):

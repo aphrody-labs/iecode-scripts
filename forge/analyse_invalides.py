@@ -61,9 +61,7 @@ def main() -> None:
         queue[min(reste, 16)] += 1
         exemples.setdefault(cle, [])
         if len(exemples[cle]) < 4:
-            exemples[cle].append(
-                f"{u['id']} len={u['len']} echec_a={pos} reste={reste}"
-            )
+            exemples[cle].append(f"{u['id']} len={u['len']} echec_a={pos} reste={reste}")
 
     print(f"unites refusees : {sum(motifs.values())}, {sum(octets.values())} octets\n")
     for cle, n in motifs.most_common():

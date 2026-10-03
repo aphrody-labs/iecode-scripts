@@ -88,9 +88,7 @@ def disasm_block(addr: int, blob: bytes, mode: str, marks: List[int]) -> None:
     for ins in cs.disasm(blob, addr):
         marker = ">>>" if ins.address in marks else "   "
         raw = " ".join(f"{b:02x}" for b in ins.bytes)
-        print(
-            f"{marker} 0x{ins.address:08X}: {raw:<11} {ins.mnemonic:<8} {ins.op_str}"
-        )
+        print(f"{marker} 0x{ins.address:08X}: {raw:<11} {ins.mnemonic:<8} {ins.op_str}")
         last_end = ins.address + ins.size
     end = addr + len(blob)
     if last_end < end:
@@ -125,8 +123,10 @@ def main() -> None:
 
     marks = parse_marks(args.mark)
     filt = (
-        int(args.filter, 16) if args.filter and args.filter.lower().startswith("0x")
-        else int(args.filter) if args.filter
+        int(args.filter, 16)
+        if args.filter and args.filter.lower().startswith("0x")
+        else int(args.filter)
+        if args.filter
         else None
     )
 

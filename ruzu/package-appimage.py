@@ -30,9 +30,16 @@ RUNTIME = (
 )
 # Keep the host graphics stack, including its driver/loader pairing.
 EXCLUDED = (
-    "libvulkan.so*", "libvulkan_*.so*", "libGL.so*", "libGLX*.so*",
-    "libEGL*.so*", "libGLdispatch.so*", "libGLES*.so*", "libgbm.so*",
-    "libdrm*.so*", "*_dri.so",
+    "libvulkan.so*",
+    "libvulkan_*.so*",
+    "libGL.so*",
+    "libGLX*.so*",
+    "libEGL*.so*",
+    "libGLdispatch.so*",
+    "libGLES*.so*",
+    "libgbm.so*",
+    "libdrm*.so*",
+    "*_dri.so",
 )
 
 
@@ -69,7 +76,8 @@ def remove_plugin_overrides(appdir):
     # exclusions. Remove any host graphics libraries it brought back in.
     for path in (appdir / "usr/lib").rglob("*"):
         if (path.is_file() or path.is_symlink()) and any(
-                fnmatch.fnmatchcase(path.name, pattern) for pattern in EXCLUDED):
+            fnmatch.fnmatchcase(path.name, pattern) for pattern in EXCLUDED
+        ):
             path.unlink()
     # Even custom launchers get wrapped if this generated hook is left behind.
     (appdir / "apprun-hooks/linuxdeploy-plugin-gtk.sh").unlink()
@@ -85,8 +93,10 @@ def glibc_requirement(appdir):
             if source.read(4) != b"\x7fELF":
                 continue
         output = run("readelf", "--version-info", str(path), capture_output=True, text=True).stdout
-        versions.update(tuple(map(int, item.split(".")))
-                        for item in re.findall(r"GLIBC_([0-9]+\.[0-9]+(?:\.[0-9]+)?)", output))
+        versions.update(
+            tuple(map(int, item.split(".")))
+            for item in re.findall(r"GLIBC_([0-9]+\.[0-9]+(?:\.[0-9]+)?)", output)
+        )
     return ".".join(map(str, max(versions))) if versions else "unknown"
 
 
@@ -94,7 +104,9 @@ def package(root):
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise RuntimeError("Requires a native Linux x86_64 build host")
     if os.environ.get("CARGO_TARGET_DIR") or os.environ.get("CARGO_BUILD_TARGET"):
-        raise RuntimeError("Unset CARGO_TARGET_DIR/CARGO_BUILD_TARGET: packaging uses target/release/ruzu")
+        raise RuntimeError(
+            "Unset CARGO_TARGET_DIR/CARGO_BUILD_TARGET: packaging uses target/release/ruzu"
+        )
     for name in ("file", "readelf", "strip", "pkg-config", "glib-compile-schemas"):
         if not shutil.which(name):
             raise RuntimeError(f"Missing packaging tool: {name}")
@@ -102,12 +114,23 @@ def package(root):
     binary = root / "target/release/ruzu"
     if not binary.is_file():
         raise RuntimeError("Build target/release/ruzu first (./build.sh appimage)")
-    header = run("readelf", "-h", str(binary), capture_output=True, text=True,
-                 env=dict(os.environ, LC_ALL="C")).stdout
+    header = run(
+        "readelf",
+        "-h",
+        str(binary),
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, LC_ALL="C"),
+    ).stdout
     if "Advanced Micro Devices X86-64" not in header:
         raise RuntimeError("target/release/ruzu is not an x86_64 ELF binary")
-    revision = run("sh", str(root / "scripts/ruzu/package-revision.sh"), str(root),
-                   capture_output=True, text=True).stdout.strip()
+    revision = run(
+        "sh",
+        str(root / "scripts/ruzu/package-revision.sh"),
+        str(root),
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
     cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "ruzu-packaging"
     cache.mkdir(parents=True, exist_ok=True)
     deploy_image = download(cache, "linuxdeploy-x86_64.AppImage", LINUXDEPLOY)
@@ -123,14 +146,32 @@ def package(root):
         staged_binary = appdir / "usr/bin/ruzu"
         shutil.copy2(binary, staged_binary)
         run("strip", "--strip-unneeded", str(staged_binary))
-        env = dict(os.environ, DEPLOY_GTK_VERSION="4", ARCH="x86_64",
-                   LDAI_RUNTIME_FILE=str(runtime),
-                   PATH=f"{cache}:{os.environ.get('PATH', '')}", OUTPUT=str(work / output_name))
+        env = dict(
+            os.environ,
+            DEPLOY_GTK_VERSION="4",
+            ARCH="x86_64",
+            LDAI_RUNTIME_FILE=str(runtime),
+            PATH=f"{cache}:{os.environ.get('PATH', '')}",
+            OUTPUT=str(work / output_name),
+        )
         excludes = [f"--exclude-library={pattern}" for pattern in EXCLUDED]
-        run(str(deploy), "--appdir", str(appdir), "--executable", str(staged_binary),
-            "--desktop-file", str(root / "crates/emu/dist/linux/ruzu.desktop"),
-            "--icon-file", str(root / "crates/emu/ruzu/ruzu/assets/ruzu-rusty-lemon.png"),
-            "--icon-filename", "ruzu", "--plugin", "gtk", *excludes, env=env)
+        run(
+            str(deploy),
+            "--appdir",
+            str(appdir),
+            "--executable",
+            str(staged_binary),
+            "--desktop-file",
+            str(root / "crates/emu/dist/linux/ruzu.desktop"),
+            "--icon-file",
+            str(root / "crates/emu/ruzu/ruzu/assets/ruzu-rusty-lemon.png"),
+            "--icon-filename",
+            "ruzu",
+            "--plugin",
+            "gtk",
+            *excludes,
+            env=env,
+        )
         remove_plugin_overrides(appdir)
         # Our launcher sets resource paths without overriding user settings.
         launcher = work / "AppRun"
@@ -142,11 +183,27 @@ def package(root):
         shutil.copy2(root / "LICENSE", info / "LICENSE")
         (info / "build-info.txt").write_text(
             f"Revision: {revision}\nArchitecture: x86_64\nRequired GLIBC: {minimum}\n"
-            "Graphics drivers: supplied by host. Target Linux distribution validation required.\n")
-        run(str(deploy), "--appdir", str(appdir), "--custom-apprun", str(launcher),
-            "--output", "appimage", *excludes, env=env, cwd=work)
-        current_revision = run("sh", str(root / "scripts/ruzu/package-revision.sh"), str(root),
-                               capture_output=True, text=True).stdout.strip()
+            "Graphics drivers: supplied by host. Target Linux distribution validation required.\n"
+        )
+        run(
+            str(deploy),
+            "--appdir",
+            str(appdir),
+            "--custom-apprun",
+            str(launcher),
+            "--output",
+            "appimage",
+            *excludes,
+            env=env,
+            cwd=work,
+        )
+        current_revision = run(
+            "sh",
+            str(root / "scripts/ruzu/package-revision.sh"),
+            str(root),
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
         if current_revision != revision:
             raise RuntimeError("Git revision changed during packaging; retry on a stable checkout")
         artifact = work / output_name
@@ -155,9 +212,11 @@ def package(root):
         artifact.chmod(0o755)
         checksum = digest(artifact)
         artifact.replace(binary.parent / output_name)
-    print(f"Created {binary.parent / output_name}\nSHA256: {checksum}\n"
-          f"Requires GLIBC >= {minimum} and compatible host graphics drivers.\n"
-          "Test on the target Linux distributions before distribution; packaging is not a compatibility guarantee.")
+    print(
+        f"Created {binary.parent / output_name}\nSHA256: {checksum}\n"
+        f"Requires GLIBC >= {minimum} and compatible host graphics drivers.\n"
+        "Test on the target Linux distributions before distribution; packaging is not a compatibility guarantee."
+    )
 
 
 if __name__ == "__main__":

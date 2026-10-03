@@ -8,6 +8,7 @@ avec P3 = [0,0,0,1]. Le binaire utilise `vfmadd231ps` (FMA) → le port DOIT uti
 même ordre d'accumulation (sinon dérive de dernier bit). Fuzz seedé de matrices finies, comparées
 bit-à-bit (12 floats) à l'oracle uemu. Sort 0 si byte-exact. Miroir = port `aphrody_nie_core::affine`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -24,6 +25,7 @@ CONST_VA = 0x141866910  # _DAT_141866910 = [0,0,0,1]
 def fma(a, b, c):
     """FMA f32 fusée (un seul arrondi), via float64 puis arrondi f32 — comme le hardware/uemu."""
     import math
+
     r = math.fma(a, b, c) if hasattr(math, "fma") else (a * b + c)
     return f32(r)
 
@@ -97,5 +99,7 @@ if bits(er) != bits(a):
     fails += 1
     print(f"  ✗ identité: uemu={er} ≠ a={a}")
 
-print(f"affine compose 3x4 (FUN_14007f8f0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+print(
+    f"affine compose 3x4 (FUN_14007f8f0): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

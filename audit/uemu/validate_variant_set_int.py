@@ -25,6 +25,7 @@ indirect vtable). On valide donc sur le domaine REPRODUCTIBLE « variante vide �
 qui est l'usage « poser une valeur fraîche ». Les écritures finales ne touchent que +0..+2
 (tag=1) et +8..+12 (valeur) ; +2..+8 et +12..+16 sont préservés.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -34,8 +35,8 @@ from uemu import Emu, SCRATCH
 
 VA = 0x1405992A0
 
-P1 = SCRATCH + 0x1000   # param_1 : variante de sortie (16 octets)
-P2 = SCRATCH + 0x2000   # param_2 : contexte (pointeur node @ +8)
+P1 = SCRATCH + 0x1000  # param_1 : variante de sortie (16 octets)
+P2 = SCRATCH + 0x2000  # param_2 : contexte (pointeur node @ +8)
 NODE = SCRATCH + 0x3000  # node : u16 source @ +0x18
 
 
@@ -43,7 +44,7 @@ def model(variant_in: bytes, source: int) -> bytes:
     """Miroir Python : variante vide (tag 0) en entrée → écrit valeur puis tag, préserve le reste."""
     out = bytearray(variant_in)
     struct.pack_into("<I", out, 8, source & 0xFFFF)  # *(u32*)(+8) = source (zero-étendu)
-    struct.pack_into("<H", out, 0, 1)                # *(u16*)(+0) = 1
+    struct.pack_into("<H", out, 0, 1)  # *(u16*)(+0) = 1
     return bytes(out)
 
 
@@ -72,7 +73,7 @@ def main() -> int:
     for idx, (source, variant_in) in enumerate(cases):
         mem = {
             P1: variant_in,
-            P2: b"\x00" * 8 + struct.pack("<Q", NODE),   # *(param_2+8) = NODE
+            P2: b"\x00" * 8 + struct.pack("<Q", NODE),  # *(param_2+8) = NODE
             NODE: b"\x00" * 0x18 + struct.pack("<H", source) + b"\x00" * 6,
         }
         out = e.call(VA, rcx=P1, rdx=P2, mem=mem, read={P1: 16})

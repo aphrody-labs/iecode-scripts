@@ -45,8 +45,13 @@ def main() -> None:
     ).fetchall()
     print(f"{len(rows)} classes avec adresse de vtable\n")
 
-    stats = {"pointe_code": 0, "pointe_ailleurs": 0, "hors_image": 0,
-             "code_a_+8": 0, "code_a_-8": 0}
+    stats = {
+        "pointe_code": 0,
+        "pointe_ailleurs": 0,
+        "hors_image": 0,
+        "code_a_+8": 0,
+        "code_a_-8": 0,
+    }
     for _, va in rows:
         m = mot(va)
         if m is None:

@@ -1,4 +1,5 @@
 """Exercise the shell and PowerShell release guards without building an emulator."""
+
 import shutil
 import subprocess
 import tempfile
@@ -17,28 +18,38 @@ class ReleaseChecks(unittest.TestCase):
         self.git("config", "user.email", "release-test@example.invalid")
         self.git("config", "user.name", "Release Test")
         (self.repo / "Cargo.toml").write_text(
-            '[workspace]\nmembers=["app"]\nresolver="2"\n'
-            '[workspace.package]\nversion="0.0.2"\n'
+            '[workspace]\nmembers=["app"]\nresolver="2"\n[workspace.package]\nversion="0.0.2"\n'
         )
         (self.repo / "app/src").mkdir(parents=True)
         (self.repo / "app/Cargo.toml").write_text(
             '[package]\nname="ruzu"\nversion.workspace=true\nedition="2021"\n'
         )
         (self.repo / "app/src/main.rs").write_text("fn main() {}\n")
-        subprocess.run(["cargo", "generate-lockfile", "--offline"], cwd=self.repo,
-                       check=True, capture_output=True)
+        subprocess.run(
+            ["cargo", "generate-lockfile", "--offline"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+        )
         self.git("add", ".")
         self.git("commit", "-qm", "fixture")
 
     def git(self, *args):
-        return subprocess.run(["git", *args], cwd=self.repo, check=True,
-                              capture_output=True, text=True).stdout.strip()
+        return subprocess.run(
+            ["git", *args], cwd=self.repo, check=True, capture_output=True, text=True
+        ).stdout.strip()
 
     def runners(self):
         yield ["sh", str(SCRIPTS / "check-release.sh"), str(self.repo)]
         if shutil.which("pwsh"):
-            yield ["pwsh", "-NoProfile", "-File", str(SCRIPTS / "check-release.ps1"),
-                   "-Repository", str(self.repo)]
+            yield [
+                "pwsh",
+                "-NoProfile",
+                "-File",
+                str(SCRIPTS / "check-release.ps1"),
+                "-Repository",
+                str(self.repo),
+            ]
 
     def assert_checks(self, success, message=""):
         for command in self.runners():
@@ -64,7 +75,7 @@ class ReleaseChecks(unittest.TestCase):
 
     def test_modified_tracked_file(self):
         self.git("tag", "v0.0.2")
-        (self.repo / "app/src/main.rs").write_text("fn main() { println!(\"changed\"); }\n")
+        (self.repo / "app/src/main.rs").write_text('fn main() { println!("changed"); }\n')
         self.assert_checks(False, "clean checkout")
         self.git("add", ".")
         self.assert_checks(False, "clean checkout")
@@ -76,12 +87,14 @@ class ReleaseChecks(unittest.TestCase):
 
     def test_uninitialized_submodule(self):
         # A gitlink can reference this fixture's existing commit without network I/O.
-        (self.repo / ".gitmodules").write_text(
-            '[submodule "dep"]\npath = dep\nurl = ./unused\n'
-        )
+        (self.repo / ".gitmodules").write_text('[submodule "dep"]\npath = dep\nurl = ./unused\n')
         self.git("add", ".gitmodules")
-        self.git("update-index", "--add", "--cacheinfo",
-                 "160000," + self.git("rev-parse", "HEAD") + ",dep")
+        self.git(
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            "160000," + self.git("rev-parse", "HEAD") + ",dep",
+        )
         (self.repo / "dep").mkdir()
         self.git("commit", "-qm", "add submodule")
         self.git("tag", "v0.0.2")

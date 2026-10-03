@@ -7,6 +7,7 @@ triée (leftmost-equal si `param_3==null`) ou `0xffff` ; `param_3` (out) = posit
 échec. **Fuzz seedé** (arbres aléatoires avec doublons, cibles présentes/absentes/bords, deux modes
 out) comparé byte-exact à l'oracle uemu. Sort 0 si byte-exact. Miroir = port `aphrody_nie_core::intrusive_map`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -33,9 +34,15 @@ def emu(e, keys, perm, target, out_mode):
         struct.pack_into("<H", data, SOFF + i * 2, p)
     mem = {HDR: bytes(hdr), BASE: bytes(data)}
     if out_mode:
-        mem[OUT] = b"\xAA\xAA"
-    out = e.call(0x1402B4160, rcx=HDR, rdx=target & 0xFFFFFFFF,
-                 r8=(OUT if out_mode else 0), mem=mem, read=({OUT: 2} if out_mode else None))
+        mem[OUT] = b"\xaa\xaa"
+    out = e.call(
+        0x1402B4160,
+        rcx=HDR,
+        rdx=target & 0xFFFFFFFF,
+        r8=(OUT if out_mode else 0),
+        mem=mem,
+        read=({OUT: 2} if out_mode else None),
+    )
     ov = struct.unpack("<H", out["mem"][OUT])[0] if out_mode else None
     return out["rax"] & 0xFFFF, ov
 
@@ -45,12 +52,12 @@ def mirror(sk, target, out_mode):
     target &= 0xFFFFFFFF
     n = len(sk)
     if n == 0:
-        return 0xffff, None
+        return 0xFFFF, None
     u6 = 0
     if (sk[0] & 0xFFFFFFFF) < target:
         if (sk[n - 1] & 0xFFFFFFFF) <= target:
             if (sk[n - 1] & 0xFFFFFFFF) < target:
-                return 0xffff, ((n - 1) if out_mode else None)
+                return 0xFFFF, ((n - 1) if out_mode else None)
             if out_mode:
                 return (n - 1), None
             if sk[n - 2] == target:
@@ -89,10 +96,10 @@ def mirror(sk, target, out_mode):
                         lo = mid + 1
                     if lo > hi:
                         break
-        return 0xffff, (u6 if out_mode else None)
+        return 0xFFFF, (u6 if out_mode else None)
     if (sk[0] & 0xFFFFFFFF) <= target:
         return 0, None
-    return 0xffff, (0 if out_mode else None)
+    return 0xFFFF, (0 if out_mode else None)
 
 
 def lcg(state):
@@ -118,10 +125,14 @@ for _ in range(700):
             er, eo = emu(e, keys, perm, tg, om)
             mr, mo = mirror(keys, tg, om)
             okp = er == mr
-            oko = (not om) or (mr != 0xffff) or (eo == mo)
+            oko = (not om) or (mr != 0xFFFF) or (eo == mo)
             if not (okp and oko):
                 fails += 1
                 if fails <= 10:
-                    print(f"  ✗ sk={keys} tg={tg & 0xFFFFFFFF:#x} out={om}: uemu=({er:#x},{eo}) mir=({mr:#x},{mo})")
-print(f"intrusive_map (trié/binary-search): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+                    print(
+                        f"  ✗ sk={keys} tg={tg & 0xFFFFFFFF:#x} out={om}: uemu=({er:#x},{eo}) mir=({mr:#x},{mo})"
+                    )
+print(
+    f"intrusive_map (trié/binary-search): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

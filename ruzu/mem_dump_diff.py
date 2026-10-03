@@ -35,8 +35,8 @@ def diff_block(addr, ruzu_data, zuyu_data, max_diffs=8):
             # Find first differing byte in this page
             for i in range(off, end):
                 if ruzu_data[i] != zuyu_data[i]:
-                    rd = ruzu_data[i:i + 16]
-                    zd = zuyu_data[i:i + 16]
+                    rd = ruzu_data[i : i + 16]
+                    zd = zuyu_data[i : i + 16]
                     diffs.append((addr + i, rd.hex(), zd.hex()))
                     break
             if len(diffs) >= max_diffs:
@@ -80,17 +80,21 @@ def main():
 
     print(f"\n== Content diff (first {8 if not show_all else 'all'} differing blocks) ==")
     diff_count = 0
-    for (addr, size) in sorted(common):
+    for addr, size in sorted(common):
         if addr_filter is not None and addr != addr_filter:
             continue
         rs, rp, rd = ruzu[(addr, size)]
         zs, zp, zd = zuyu[(addr, size)]
         if rs != zs or rp != zp:
-            print(f"BLOCK 0x{addr:X} size=0x{size:X} STATE/PERM differ: ruzu state=0x{rs:X} perm=0x{rp:X}, zuyu state=0x{zs:X} perm=0x{zp:X}")
+            print(
+                f"BLOCK 0x{addr:X} size=0x{size:X} STATE/PERM differ: ruzu state=0x{rs:X} perm=0x{rp:X}, zuyu state=0x{zs:X} perm=0x{zp:X}"
+            )
         if rd == zd:
             continue
         diffs = diff_block(addr, rd, zd, max_diffs=4)
-        print(f"BLOCK 0x{addr:X} size=0x{size:X} state=0x{rs:X} ({len(diffs)} diffs in first {min(8, size//PAGE)} pages):")
+        print(
+            f"BLOCK 0x{addr:X} size=0x{size:X} state=0x{rs:X} ({len(diffs)} diffs in first {min(8, size // PAGE)} pages):"
+        )
         for da, rb, zb in diffs:
             print(f"  @0x{da:X}: ruzu={rb} zuyu={zb}")
         diff_count += 1

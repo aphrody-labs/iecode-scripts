@@ -15,22 +15,24 @@ hors périmètre de CETTE fonction.
 
 Lancer : uv run scripts/audit/uemu/validate_imm_batcher.py
 """
+
 import struct
 import sys as _sys
 from pathlib import Path as _Path
+
 _sys.path.insert(0, str(_Path(__file__).resolve().parent))
 from uemu import Emu, SCRATCH
 
 VA = 0x14075C030
 
 # ---- agencement mémoire (tout dans la page SCRATCH 1 MiB) ----
-P1   = SCRATCH + 0x00000   # batcher state (0x70 octets utiles)
-CONT = SCRATCH + 0x00100   # conteneur (0x38 octets) : 3 sous-tableaux {ptr,count,cap}
-PTS  = SCRATCH + 0x10000   # buffer points  (stride 0x10)
-LIN  = SCRATCH + 0x20000   # buffer lignes  (stride 0x20)
-TRI  = SCRATCH + 0x30000   # buffer triangles (stride 0x30)
-P2   = SCRATCH + 0x40000   # vec3 entrant (16 octets)
-CAP  = 200                 # capacité (count toujours < cap → fast path)
+P1 = SCRATCH + 0x00000  # batcher state (0x70 octets utiles)
+CONT = SCRATCH + 0x00100  # conteneur (0x38 octets) : 3 sous-tableaux {ptr,count,cap}
+PTS = SCRATCH + 0x10000  # buffer points  (stride 0x10)
+LIN = SCRATCH + 0x20000  # buffer lignes  (stride 0x20)
+TRI = SCRATCH + 0x30000  # buffer triangles (stride 0x30)
+P2 = SCRATCH + 0x40000  # vec3 entrant (16 octets)
+CAP = 200  # capacité (count toujours < cap → fast path)
 
 
 def f32(x):
@@ -49,8 +51,8 @@ def mat_vec(m, v):
     """FUN_14075df00 : O[col] = somme_ligne V[ligne]*M[ligne*4+col], ordre d'accumulation exact.
     m = 16 f32 (row-major), v = (x,y,z,w). Renvoie (O0,O1,O2,O3)."""
     x, y, z, w = v
-    o0 = fadd(fadd(fmul(x, m[0]), fmul(z, m[8])),  fadd(fmul(y, m[4]),  fmul(w, m[12])))
-    o1 = fadd(fadd(fmul(z, m[9]), fmul(w, m[13])), fadd(fmul(x, m[1]),  fmul(y, m[5])))
+    o0 = fadd(fadd(fmul(x, m[0]), fmul(z, m[8])), fadd(fmul(y, m[4]), fmul(w, m[12])))
+    o1 = fadd(fadd(fmul(z, m[9]), fmul(w, m[13])), fadd(fmul(x, m[1]), fmul(y, m[5])))
     o2 = fadd(fadd(fmul(z, m[10]), fmul(w, m[14])), fadd(fmul(x, m[2]), fmul(y, m[6])))
     o3 = fadd(fadd(fmul(z, m[11]), fmul(w, m[15])), fadd(fmul(x, m[3]), fmul(y, m[7])))
     return (o0, o1, o2, o3)
@@ -81,17 +83,27 @@ def bits(f):
 
 def build_case(rng):
     mode = rng.rangei(0, 4)
-    count = rng.rangei(0, 6)          # param_1[8] avant l'appel
-    color = rng.u32()                 # param_1[1] (brut, écrit en .w)
-    cur = [bits(rng.f(-1000, 1000)) for _ in range(3)]   # param_1[2..4]
-    p1v = [bits(rng.f(-1000, 1000)) for _ in range(3)]   # param_1[5..7]
-    mat = [f32(rng.f(-4, 4)) for _ in range(16)]         # param_1[9..24] (stockée f32)
-    inp = [f32(rng.f(-1000, 1000)) for _ in range(3)]    # param_2 (stockée f32)
-    pcnt = rng.rangei(0, 20)          # count points conteneur
+    count = rng.rangei(0, 6)  # param_1[8] avant l'appel
+    color = rng.u32()  # param_1[1] (brut, écrit en .w)
+    cur = [bits(rng.f(-1000, 1000)) for _ in range(3)]  # param_1[2..4]
+    p1v = [bits(rng.f(-1000, 1000)) for _ in range(3)]  # param_1[5..7]
+    mat = [f32(rng.f(-4, 4)) for _ in range(16)]  # param_1[9..24] (stockée f32)
+    inp = [f32(rng.f(-1000, 1000)) for _ in range(3)]  # param_2 (stockée f32)
+    pcnt = rng.rangei(0, 20)  # count points conteneur
     lcnt = rng.rangei(0, 20)
     tcnt = rng.rangei(0, 20)
-    return dict(mode=mode, count=count, color=color, cur=cur, p1=p1v, mat=mat,
-                inp=inp, pcnt=pcnt, lcnt=lcnt, tcnt=tcnt)
+    return dict(
+        mode=mode,
+        count=count,
+        color=color,
+        cur=cur,
+        p1=p1v,
+        mat=mat,
+        inp=inp,
+        pcnt=pcnt,
+        lcnt=lcnt,
+        tcnt=tcnt,
+    )
 
 
 def pack_state(c):
@@ -104,7 +116,7 @@ def pack_state(c):
     struct.pack_into("<I", b, 0x20, c["count"])
     for i in range(16):
         struct.pack_into("<f", b, 0x24 + 4 * i, c["mat"][i])
-    struct.pack_into("<Q", b, 0x68, CONT)   # *(param_1+0x1a) -> conteneur
+    struct.pack_into("<Q", b, 0x68, CONT)  # *(param_1+0x1a) -> conteneur
     return bytes(b)
 
 
@@ -129,7 +141,7 @@ def model(c):
     # entrée homogène : x,y,z,1.0
     x, y, z = c["inp"]
     o = mat_vec(m, (f32(x), f32(y), f32(z), 1.0))
-    new = [bits(o[0]), bits(o[1]), bits(o[2])]   # param_2 transformé (3 comp)
+    new = [bits(o[0]), bits(o[1]), bits(o[2])]  # param_2 transformé (3 comp)
 
     # buffers (zéro-init, CAP éléments)
     pts = bytearray(CAP * 0x10)
@@ -141,7 +153,7 @@ def model(c):
     cur = list(c["cur"])
     p1 = list(c["p1"])
     mode = c["mode"]
-    count = (c["count"] + 1) & 0xFFFFFFFF   # uVar9 = ++param_1[8]
+    count = (c["count"] + 1) & 0xFFFFFFFF  # uVar9 = ++param_1[8]
     state_count = count
 
     def w4(buf, base, vals):
@@ -231,8 +243,7 @@ def run():
         # param_2 : 3 floats + un 4e mot quelconque (la fonction ne le lit pas)
         p2_in = struct.pack("<fff", *c["inp"]) + struct.pack("<I", 0x3F800000)
         mem = {P1: state, CONT: cont, PTS: pts0, LIN: lin0, TRI: tri0, P2: p2_in}
-        read = {P1: 0x70, CONT: 0x38, PTS: CAP * 0x10, LIN: CAP * 0x20,
-                TRI: CAP * 0x30, P2: 16}
+        read = {P1: 0x70, CONT: 0x38, PTS: CAP * 0x10, LIN: CAP * 0x20, TRI: CAP * 0x30, P2: 16}
         out = e.call(VA, rcx=P1, rdx=P2, mem=mem, read=read)
         if out.get("error"):
             print(f"[{it}] ERREUR uemu: {out['error']}  mode={c['mode']}")
@@ -247,15 +258,35 @@ def run():
         got_pts = bytes(out["mem"][PTS])
         got_lin = bytes(out["mem"][LIN])
         got_tri = bytes(out["mem"][TRI])
-        ok = (got_p2 == exp_p2 and got_so == exp_so and got_co == exp_co and
-              got_pts == exp_pts and got_lin == exp_lin and got_tri == exp_tri
-              and out["rax"] == P1)
+        ok = (
+            got_p2 == exp_p2
+            and got_so == exp_so
+            and got_co == exp_co
+            and got_pts == exp_pts
+            and got_lin == exp_lin
+            and got_tri == exp_tri
+            and out["rax"] == P1
+        )
         if not ok:
             mismatches += 1
             if first_fail is None:
-                first_fail = (it, c, out, exp_p2, got_p2, exp_so, got_so,
-                              exp_co, got_co, exp_pts, got_pts, exp_lin, got_lin,
-                              exp_tri, got_tri)
+                first_fail = (
+                    it,
+                    c,
+                    out,
+                    exp_p2,
+                    got_p2,
+                    exp_so,
+                    got_so,
+                    exp_co,
+                    got_co,
+                    exp_pts,
+                    got_pts,
+                    exp_lin,
+                    got_lin,
+                    exp_tri,
+                    got_tri,
+                )
     # rapport
     counts = {}
     rng2 = Lcg(0xC030_1407_5DF0_0001)
@@ -270,16 +301,21 @@ def run():
     if first_fail:
         it = first_fail[0]
         c = first_fail[1]
-        print(f"  premier échec cas {it}: mode={c['mode']} count={c['count']} "
-              f"pcnt={c['pcnt']} lcnt={c['lcnt']} tcnt={c['tcnt']}")
+        print(
+            f"  premier échec cas {it}: mode={c['mode']} count={c['count']} "
+            f"pcnt={c['pcnt']} lcnt={c['lcnt']} tcnt={c['tcnt']}"
+        )
         if len(first_fail) > 3:
             (_, _, _, ep2, gp2, eso, gso, eco, gco, ept, gpt, eli, gli, etr, gtr) = first_fail
+
             def diff(name, e, g):
                 if e != g:
                     for off in range(0, len(e), 4):
-                        ew = e[off:off+4]; gw = g[off:off+4]
+                        ew = e[off : off + 4]
+                        gw = g[off : off + 4]
                         if ew != gw:
                             print(f"    {name} +0x{off:03x}: exp={ew.hex()} got={gw.hex()}")
+
             diff("param2", ep2, gp2)
             diff("state", eso, gso)
             diff("cont", eco, gco)
@@ -291,4 +327,5 @@ def run():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(run())

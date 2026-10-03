@@ -13,6 +13,7 @@ LANDMINE : `cvttss2si` (x86) tronque vers zéro et renvoie **0x80000000** pour N
 `f as i32` de Rust SATURE → divergent. On fuzz avec des floats limites (NaN, ±inf, ±2^31, 1e20,
 fractionnaires) pour verrouiller la sémantique. Sort 0 si byte-exact. Miroir = port `aphrody_nie_core`.
 """
+
 import struct
 import sys
 from pathlib import Path
@@ -56,6 +57,7 @@ def emu_read(e, tags, values, index):
 def cvttss2si(bits):
     """x86 CVTTSS2SI exact : tronque vers zéro ; NaN/inf/hors-i32 → 0x80000000 (=-2^31)."""
     import math
+
     f = struct.unpack("<f", struct.pack("<I", bits & 0xFFFFFFFF))[0]
     if f != f or math.isinf(f):  # NaN ou ±inf → indefinite
         return -(1 << 31)
@@ -96,11 +98,19 @@ def lcg(state):
 
 
 EDGE_FLOATS = [
-    0x7FC00000, 0x7F800000, 0xFF800000,           # NaN, +inf, -inf
-    0x4F000000, 0xCF000000,                         # +2^31, -2^31
-    0x3FC00000, 0xBFC00000,                         # 1.5, -1.5
-    0x60AD78EC, 0xE0AD78EC,                         # ~1e20, -1e20
-    0x00000000, 0x80000000, 0x3F800000, 0x437F0000,  # 0, -0, 1.0, 255.0
+    0x7FC00000,
+    0x7F800000,
+    0xFF800000,  # NaN, +inf, -inf
+    0x4F000000,
+    0xCF000000,  # +2^31, -2^31
+    0x3FC00000,
+    0xBFC00000,  # 1.5, -1.5
+    0x60AD78EC,
+    0xE0AD78EC,  # ~1e20, -1e20
+    0x00000000,
+    0x80000000,
+    0x3F800000,
+    0x437F0000,  # 0, -0, 1.0, 255.0
 ]
 e = Emu()
 rng = lcg(0x7ED0)
@@ -121,7 +131,11 @@ for _ in range(800):
     if er != mr:
         fails += 1
         if fails <= 10:
-            print(f"  ✗ tags={tags} idx={index} tag={tags[index]} val={values[index].hex()}: "
-                  f"uemu={er} ≠ miroir={mr}")
-print(f"typed value reader (FUN_140051f40): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}")
+            print(
+                f"  ✗ tags={tags} idx={index} tag={tags[index]} val={values[index].hex()}: "
+                f"uemu={er} ≠ miroir={mr}"
+            )
+print(
+    f"typed value reader (FUN_140051f40): {total} cas ; {'BYTE-EXACT' if not fails else f'{fails} DIVERGENCES'}"
+)
 sys.exit(1 if fails else 0)

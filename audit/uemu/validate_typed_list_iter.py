@@ -12,9 +12,11 @@ FUN_140052040 = "déréférence + avance" d'un itérateur de liste typée à 2 b
 
 Lance depuis scripts/ :  uv run scripts/audit/uemu/validate_typed_list_iter.py
 """
+
 import struct
 import sys as _sys
 from pathlib import Path as _Path
+
 _sys.path.insert(0, str(_Path(__file__).resolve().parent))
 from uemu import Emu, SCRATCH
 
@@ -27,13 +29,13 @@ MASK64 = (1 << 64) - 1
 # Disposition mémoire (toutes dans la page SCRATCH déjà mappée, non chevauchantes).
 ITER = SCRATCH + 0x0000
 CONT = SCRATCH + 0x0100
-DESC = SCRATCH + 0x0400   # descripteur, 0x100 octets
-TAGS = SCRATCH + 0x0800   # tableau de tags 2-bits, 256 octets
-VALS = SCRATCH + 0x0C00   # tableau de valeurs u32, 0x400 octets
+DESC = SCRATCH + 0x0400  # descripteur, 0x100 octets
+TAGS = SCRATCH + 0x0800  # tableau de tags 2-bits, 256 octets
+VALS = SCRATCH + 0x0C00  # tableau de valeurs u32, 0x400 octets
 BOUND = SCRATCH + 0x1000  # struct pointée par desc[0x40] ; u32 borne à +8
-REGION = 0x2000           # taille totale réécrite à chaque appel (déterminisme)
+REGION = 0x2000  # taille totale réécrite à chaque appel (déterminisme)
 
-UPPER_SENT = 0xCAFEBABE   # 4 octets hauts de l'index : doivent rester intacts
+UPPER_SENT = 0xCAFEBABE  # 4 octets hauts de l'index : doivent rester intacts
 
 
 def to_i32(x):
@@ -124,7 +126,7 @@ def build(index, tag_bytes, value, d):
     w64(CONT - SCRATCH + 0x08, TAGS)
     w64(CONT - SCRATCH + 0x10, VALS)
     # tags
-    buf[TAGS - SCRATCH:TAGS - SCRATCH + len(tag_bytes)] = tag_bytes
+    buf[TAGS - SCRATCH : TAGS - SCRATCH + len(tag_bytes)] = tag_bytes
     # valeur à l'index : on écrit le slot VALS+index*4 (index in [-3,199] -> dans la zone libre)
     w32(VALS - SCRATCH + index * 4, value)
     # descripteur
@@ -145,11 +147,11 @@ def build(index, tag_bytes, value, d):
 
 def rand_desc(rng):
     d = Desc()
-    d.a1 = rng.below(3)           # 0 ~1/3 du temps
+    d.a1 = rng.below(3)  # 0 ~1/3 du temps
     d.f30 = rng.addr48()
     d.c38 = 0 if rng.below(4) == 0 else (rng.u32() & 0x7FFF) + 1
     d.f40 = 0 if rng.below(4) == 0 else 1  # présence du pointeur 0x40
-    d.bound = rng.below(64)       # borne pour tag0
+    d.bound = rng.below(64)  # borne pour tag0
     d.f50 = rng.addr48()
     d.f58 = rng.addr48()
     d.f60 = rng.addr48()
@@ -219,12 +221,16 @@ def main():
                 print(f"[{it}] MISMATCH index={index} tag={t} value={value:#x}")
                 print(f"     rax got={got_rax:#x} exp={exp_rax:#x}")
                 print(f"     idx_lo got={got_lo:#x} exp={exp_lo:#x}  hi got={got_hi:#x}")
-                print(f"     desc a1={d.a1} f30={d.f30:#x} c38={d.c38} f40={d.f40} "
-                      f"bound={d.bound} f50={d.f50:#x} f58={d.f58:#x} f60={d.f60:#x} "
-                      f"fc8={d.fc8:#x} fe8={d.fe8:#x}")
+                print(
+                    f"     desc a1={d.a1} f30={d.f30:#x} c38={d.c38} f40={d.f40} "
+                    f"bound={d.bound} f50={d.f50:#x} f58={d.f58:#x} f60={d.f60:#x} "
+                    f"fc8={d.fc8:#x} fe8={d.fe8:#x}"
+                )
 
-    print(f"\ncas={N} tags={seen_tags} sent3={seen_sent3} sent0={seen_sent0} "
-          f"resolve={seen_resolve} null={seen_null} mismatches={mism}")
+    print(
+        f"\ncas={N} tags={seen_tags} sent3={seen_sent3} sent0={seen_sent0} "
+        f"resolve={seen_resolve} null={seen_null} mismatches={mism}"
+    )
     if mism == 0:
         print("BYTE-EXACT")
         return 0
